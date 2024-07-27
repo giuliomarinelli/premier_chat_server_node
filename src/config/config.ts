@@ -1,13 +1,13 @@
 import { registerAs } from "@nestjs/config";
-import { AppConfig, DataConfig } from "./@types-config";
+import { AppConfig, AppConfiguration, DataConfig, DataConfiguration, JwtConfigurations } from "./@types-config";
 import { SnakeNamingStrategy } from "typeorm-naming-strategies";
 
 export enum ConfigKey {
     App = 'App',
     Data = 'Data',
+    Jwt = "Jwt",
     Cookie = 'Cookie',
     Exp = "Exp",
-    Keys = "Keys",
     Email = "Email",
     Twilio = "Twilio"
 }
@@ -21,7 +21,7 @@ export enum Environment {
 }
 
 const AppConfig = registerAs(
-    ConfigKey.App, (): AppConfig => ({
+    ConfigKey.App, (): AppConfiguration => ({
         port: Number(process.env.APP_PORT),
         name: process.env.APP_NAME,
         corsOrigins: JSON.parse(process.env.CORS_ORIGINS),
@@ -29,7 +29,8 @@ const AppConfig = registerAs(
     })
 )
 
-const DataConfig = registerAs(ConfigKey.Data, (): DataConfig => ({
+const DataConfig = registerAs(
+    ConfigKey.Data, (): DataConfiguration => ({
     sqlDB: {
         type: process.env.SQL_DATABASE_TYPE as 'mariadb' | 'postgres',
         host: process.env.SQL_DATABASE_HOST,
@@ -47,3 +48,41 @@ const DataConfig = registerAs(ConfigKey.Data, (): DataConfig => ({
         uri: process.env.MONGO_DB_URI
     }
 }))
+
+const JwtConfig = registerAs(
+    ConfigKey.Jwt, (): JwtConfigurations => ({
+    accessToken: {
+        secret: process.env.JWT_SECRETS_ACCESS_TOKEN,
+        expiresInMs: Number(process.env.JWT_EXPIRATION_ACCESS_TOKEN)
+    },
+    refreshToken: {
+        secret: process.env.JWT_SECRETS_REFRESH_TOKEN,
+        expiresInMs: Number(process.env.JWT_EXPIRATION_REFRESH_TOKEN)
+    },
+    wsAccessToken: {
+        secret: process.env.JWT_SECRETS_WS_ACCESS_TOKEN,
+        expiresInMs: Number(process.env.JWT_EXPIRATION_WS_ACCESS_TOKEN)
+    },
+    wsRefreshToken: {
+        secret: process.env.JWT_SECRETS_WS_REFRESH_TOKEN,
+        expiresInMs: Number(process.env.JWT_EXPIRATION_WS_REFRESH_TOKEN)
+    },
+    preAuthorizationToken: {
+        secret: process.env.JWT_SECRETS_PRE_AUTHORIZATION_TOKEN,
+        expiresInMs: Number(process.env.JWT_EXPIRATION_PRE_AUTHORIZATION_TOKEN)
+    },
+    activationToken: {
+        secret: process.env.JWT_SECRETS_ACTIVATION_TOKEN,
+        expiresInMs: Number(process.env.JWT_EXPIRATION_ACTIVATION_TOKEN)
+    },
+    phoneNumberVerificationToken: {
+        secret: process.env.JWT_SECRETS_PHONE_NUMBER_VERIFICATION_TOKEN,
+        expiresInMs: Number(process.env.JWT_EXPIRATION_PHONE_NUMBER_VERIFICATION_TOKEN)
+    },
+    emailVerificationToken: {
+        secret: process.env.JWT_SECRETS_EMAIL_VERIFICATION_TOKEN,
+        expiresInMs: Number(process.env.JWT_EXPIRATION_EMAIL_VERIFICATION_TOKEN)
+    },
+    issuer: process.env.JWT_ISSUER
+}))
+

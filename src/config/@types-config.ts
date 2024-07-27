@@ -1,6 +1,6 @@
 import { TypeOrmModuleOptions } from "@nestjs/typeorm"
 
-export interface AppConfig {
+export interface AppConfiguration {
     
     port: number
     name: string
@@ -9,7 +9,7 @@ export interface AppConfig {
 
 }
 
-export interface DataConfig {
+export interface DataConfiguration {
 
     sqlDB: TypeOrmModuleOptions
     mongoDB: {
@@ -18,3 +18,23 @@ export interface DataConfig {
 
 }
 
+export interface JwtConfiguration {
+
+    secret: string
+    expiresInMs: number
+
+}
+
+export interface JwtConfigurations {
+
+    accessToken: JwtConfiguration
+    refreshToken: JwtConfiguration
+    wsAccessToken: JwtConfiguration
+    wsRefreshToken: JwtConfiguration
+    preAuthorizationToken: JwtConfiguration
+    activationToken: JwtConfiguration
+    phoneNumberVerificationToken: JwtConfiguration
+    emailVerificationToken: JwtConfiguration
+    issuer: string
+
+}
