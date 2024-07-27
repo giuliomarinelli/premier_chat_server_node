@@ -1,5 +1,5 @@
 import { UUID } from "crypto";
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 import { Gender } from "../enums/gender.enum";
 import { _2FaStrategy } from "../enums/_2fa-strategy.enum";
 import { UserRole } from "../enums/user-role.enum";
@@ -37,6 +37,7 @@ export class User {
     @Column({ type: "varchar", length: 255 })
     hashedPassword: string
 
+    @Index()
     @Column({ type: "bigint", default: Date.now() })
     createdAt: number
 
@@ -48,7 +49,7 @@ export class User {
 
     @Column({ type: "varchar", length: 20 })
     phoneNumber: string
-   
+
     @Column({ type: "varchar", length: 20 })
     previousPhoneNumber: string
 
@@ -61,13 +62,43 @@ export class User {
     @Column({ type: "bigint" })
     mustActivateInto: number
 
+    @Index()
     @Column({ default: false })
     isEnabled: boolean
 
+    @Index()
     @Column({ default: false })
     isLocked: boolean
 
     @Column({ type: "simple-array", default: [UserRole.USER] })
     roles: UserRole[]
+
+    constructor(
+
+        firstName: string,
+        lastName: string,
+        dateOfBirth: number,
+        gender: Gender,
+        username: string,
+        email: string,
+        hashedPassword: string,
+        totpSecret: string,
+        msForActivation: number,
+        phoneNumber: string
+
+    ) {
+
+        this.firstName = firstName
+        this.lastName = lastName
+        this.dateOfBirth = dateOfBirth
+        this.gender = gender
+        this.username = username
+        this.email = email
+        this.hashedPassword = hashedPassword
+        this.totpSecret = totpSecret
+        this.phoneNumber = phoneNumber
+        this.mustActivateInto = Date.now() + msForActivation
+        
+    }
 
 }
