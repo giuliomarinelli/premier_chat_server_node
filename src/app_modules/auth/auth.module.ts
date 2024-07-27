@@ -8,9 +8,10 @@ import { User } from './Models/sql-entities/user.entity';
 import { RevokedToken } from './Models/sql-entities/revoked-token.entity';
 import { UserService } from './services/user.service';
 import { RevokedTokenService } from './services/revoked-token.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
-  providers: [AuthService, SecurityUtils, JwtUtils, Argon2PasswordEncoder, UserService, RevokedTokenService],
+  providers: [AuthService, SecurityUtils, JwtUtils, Argon2PasswordEncoder, UserService, RevokedTokenService, JwtService],
   imports: [TypeOrmModule.forFeature([User, RevokedToken])]
 })
 export class AuthModule {}
