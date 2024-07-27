@@ -38,13 +38,13 @@ export class User {
     hashedPassword: string
 
     @Index()
-    @Column({ type: "bigint", default: Date.now() })
+    @Column({ type: "bigint" })
     createdAt: number
 
-    @Column({ type: "bigint", default: Date.now() })
+    @Column({ type: "bigint" })
     updatedAt: number
 
-    @Column({ type: "simple-array", default: [] })
+    @Column({ type: "simple-array" })
     _2FaStrategies: _2FaStrategy[]
 
     @Column({ type: "varchar", length: 20 })
@@ -70,7 +70,7 @@ export class User {
     @Column({ default: false })
     isLocked: boolean
 
-    @Column({ type: "simple-array", default: [UserRole.USER] })
+    @Column({ type: "simple-array" })
     roles: UserRole[]
 
     constructor(
@@ -98,7 +98,10 @@ export class User {
         this.totpSecret = totpSecret
         this.phoneNumber = phoneNumber
         this.mustActivateInto = Date.now() + msForActivation
-        
+        this.createdAt = this.updatedAt = Date.now()
+        this.roles = [UserRole.USER]
+        this._2FaStrategies = []
+
     }
 
 }
