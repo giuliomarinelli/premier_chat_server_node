@@ -3,22 +3,16 @@ import { SelectQueryBuilder } from "typeorm";
 
 export abstract class SelectQuery<E> {
 
-    private selectQueryBuilder: SelectQueryBuilder<E>
-    
-    constructor(selectQueryBuilder: SelectQueryBuilder<E>) {
-        this.selectQueryBuilder =  selectQueryBuilder
+    public async getOne(selectQueryBuilder: SelectQueryBuilder<E>): Promise<Optional<E>> {
+        return new Optional<E>(await selectQueryBuilder.getOne())
     }
 
-    public async getOne(): Promise<Optional<E>> {
-        return new Optional<E>(await this.selectQueryBuilder.getOne())
+    public async getMany(selectQueryBuilder: SelectQueryBuilder<E>): Promise<E[]> {
+        return await selectQueryBuilder.getMany()
     }
 
-    public async getMany(): Promise<E[]> {
-        return await this.selectQueryBuilder.getMany()
-    }
-
-    public async getCount(): Promise<number> {
-        return await this.selectQueryBuilder.getCount()
+    public async getCount(selectQueryBuilder: SelectQueryBuilder<E>): Promise<number> {
+        return await selectQueryBuilder.getCount()
     }
 
 }
