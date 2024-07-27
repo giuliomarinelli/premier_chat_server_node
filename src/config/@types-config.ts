@@ -1,3 +1,4 @@
+import { MongooseModuleFactoryOptions } from "@nestjs/mongoose"
 import { TypeOrmModuleOptions } from "@nestjs/typeorm"
 
 export interface AppConfiguration {
@@ -12,10 +13,7 @@ export interface AppConfiguration {
 export interface DataConfiguration {
 
     sqlDB: TypeOrmModuleOptions
-    mongoDB: {
-        uri: string
-    }
-
+    mongoDB: MongooseModuleFactoryOptions
 }
 
 export interface JwtConfiguration {
@@ -36,5 +34,33 @@ export interface JwtConfigurations {
     phoneNumberVerificationToken: JwtConfiguration
     emailVerificationToken: JwtConfiguration
     issuer: string
+
+}
+
+export interface SmsConfiguration {
+
+    accountSID: string
+    authToken: string
+    number: string
+    from: string
+
+}
+
+export interface SecurityCookieConfiguration {
+
+    path: string
+    httpOnly: boolean
+    sameSite: "Strict" | "Lax" | "None"
+    secure: boolean
+    domain: string
+    secret: string
+
+}
+
+export interface TotpConfiguration {
+
+    bytes: number
+    digits: number
+    period: number
 
 }
