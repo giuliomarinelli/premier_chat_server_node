@@ -6,9 +6,10 @@ import { Argon2PasswordEncoder } from './services/argon2-password-encoder';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './Models/sql-entities/user.entity';
 import { RevokedToken } from './Models/sql-entities/revoked-token.entity';
+import { UserService } from './services/user.service';
 
 @Module({
-  providers: [AuthService, SecurityUtilsService, JwtUtilsService, Argon2PasswordEncoder],
+  providers: [AuthService, SecurityUtilsService, JwtUtilsService, Argon2PasswordEncoder, UserService],
   imports: [TypeOrmModule.forFeature([User, RevokedToken])]
 })
 export class AuthModule {}
