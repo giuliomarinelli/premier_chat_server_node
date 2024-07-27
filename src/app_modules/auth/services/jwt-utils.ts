@@ -29,16 +29,16 @@ export class JwtUtils {
         private readonly jwtService: JwtService
     ) {
 
-        this.accessTokenConfig = configService.get<JwtConfiguration>("Jwt.accessToken")
-        this.refreshTokenConfig = configService.get<JwtConfiguration>("Jwt.refreshToken")
-        this.wsAccessTokenConfig = configService.get<JwtConfiguration>("Jwt.wsAccessToken")
-        this.wsRefreshTokenConfig = configService.get<JwtConfiguration>("Jwt.wsRefreshToken")
-        this.preAuthorizationTokenConfig = configService.get<JwtConfiguration>("Jwt.preAuthorizationToken")
-        this.activationTokenConfig = configService.get<JwtConfiguration>("Jwt.activationToken")
-        this.phoneNumberVerificationTokenConfig = configService.get<JwtConfiguration>("Jwt.phoneNumberVerificationToken")
-        this.emailVerificationTokenConfig = configService.get<JwtConfiguration>("Jwt.emailVerificationToken")
-        this.jwtIssuer = configService.get<string>("Jwt.issuer")
-        this.securityStrategy = configService.get<"COOKIE" | "HEADER">("App.securityStrategy")
+        this.accessTokenConfig = this.configService.get<JwtConfiguration>("Jwt.accessToken")
+        this.refreshTokenConfig = this.configService.get<JwtConfiguration>("Jwt.refreshToken")
+        this.wsAccessTokenConfig = this.configService.get<JwtConfiguration>("Jwt.wsAccessToken")
+        this.wsRefreshTokenConfig = this.configService.get<JwtConfiguration>("Jwt.wsRefreshToken")
+        this.preAuthorizationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.preAuthorizationToken")
+        this.activationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.activationToken")
+        this.phoneNumberVerificationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.phoneNumberVerificationToken")
+        this.emailVerificationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.emailVerificationToken")
+        this.jwtIssuer = this.configService.get<string>("Jwt.issuer")
+        this.securityStrategy = this.configService.get<"COOKIE" | "HEADER">("App.securityStrategy")
 
     }
 
@@ -120,7 +120,7 @@ export class JwtUtils {
 
     }
 
-    
+
 
 
 }
