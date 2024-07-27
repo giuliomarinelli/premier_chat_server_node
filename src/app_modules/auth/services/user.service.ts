@@ -137,5 +137,38 @@ export class UserService extends SelectQuery<User> {
 
     }
 
+    // SELECT u.email FROM User u WHERE u.id = :userId AND u.enabled = true
+
+    public async findEmailByUserId(userId: UUID): Promise<Optional<string>> {
+
+        const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
+            .select(["u.email"])
+            .where('u.id = :userId', { userId })
+            .andWhere('u.isEnabled = true')
+
+        if ((await this.getOne(qb)).isEmpty()) return new Optional<string>()
+
+        const { email } = (await this.getOne(qb)).get()
+
+        return new Optional<string>(email)
+
+    }
+
+    // SELECT u.phoneNumber FROM User u WHERE u.id = :userId AND u.enabled = true
+
+    public async findPhoneNumberByUserId(userId: UUID): Promise<Optional<string>> {
+
+        const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
+            .select(['u.phoneNumber'])
+            .where('u.id = :userId', { userId })
+            .andWhere('u.isEnabled = true')
+
+        if ((await this.getOne(qb)).isEmpty()) return new Optional<string>()
+
+        const { phoneNumber } = (await this.getOne(qb)).get()
+
+        return new Optional<string>(phoneNumber)
+
+    }
 
 }
