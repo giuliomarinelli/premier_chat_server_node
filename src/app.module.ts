@@ -7,6 +7,8 @@ import config from './config/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { MongooseModule, MongooseModuleFactoryOptions } from '@nestjs/mongoose';
 import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
+import { ServicesService } from './app_modules/auth/services/services.service';
+
 
 @Module({
   imports: [
@@ -33,6 +35,6 @@ import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
     })
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, , ServicesService],
 })
 export class AppModule {}//
