@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Logger } from "@nestjs/common"
 import { Encode } from "src/app_modules/auth/Models/enums/encode.enum"
-import { SecurityUtilsService } from "src/app_modules/auth/services/security-utils.service"
+import { SecurityUtils } from "src/app_modules/auth/services/security-utils"
 
-const runner = (securityUtils: SecurityUtilsService) => {
+const runner = (securityUtils: SecurityUtils) => {
 
     // const logger = new Logger("Runner")
 

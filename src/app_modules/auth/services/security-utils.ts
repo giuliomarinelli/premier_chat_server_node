@@ -4,7 +4,7 @@ import { Encode } from '../Models/enums/encode.enum';
 import speakeasy from 'speakeasy'
 
 @Injectable()
-export class SecurityUtilsService {
+export class SecurityUtils {
 
     public generateSecret(bytes: number, encode: Encode): string {
 
