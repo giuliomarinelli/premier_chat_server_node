@@ -27,7 +27,7 @@ const AppConfig = registerAs(
     ConfigKey.App, (): AppConfiguration => ({
         port: Number(process.env.APP_PORT),
         name: process.env.APP_NAME,
-        corsOrigins: JSON.parse(process.env.CORS_ORIGINS),//
+        corsOrigins: JSON.parse(process.env.CORS_ORIGINS),
         securityStrategy: <"COOKIE" | "HEADER">process.env.APP_SECURITY_STRATEGY
     })
 )
