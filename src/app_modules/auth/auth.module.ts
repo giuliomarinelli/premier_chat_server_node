@@ -10,9 +10,24 @@ import { UserService } from './services/user.service';
 import { RevokedTokenService } from './services/revoked-token.service';
 import { JwtService } from '@nestjs/jwt';
 import { RequestContextModule } from 'nestjs-request-context';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthenticationGuard } from './guards/authentication.guard';
 
 @Module({
-  providers: [AuthService, SecurityUtils, JwtUtils, Argon2PasswordEncoder, UserService, RevokedTokenService, JwtService],
+  providers: [
+    AuthService,
+     SecurityUtils, 
+    JwtUtils, 
+    Argon2PasswordEncoder, 
+    UserService, 
+    RevokedTokenService, 
+    JwtService,
+    {
+      provide: APP_GUARD,
+      useClass: AuthenticationGuard
+    }
+
+  ],
   imports: [TypeOrmModule.forFeature([User, RevokedToken]), RequestContextModule]
 })
 export class AuthModule {}

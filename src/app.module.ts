@@ -36,6 +36,8 @@ import { RequestContextModule } from 'nestjs-request-context';
     RequestContextModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService
+  ],
 })
 export class AppModule { }

@@ -127,7 +127,7 @@ const SecurityCookieConfig = registerAs(
     ConfigKey.SecurityCookie, (): SecurityCookieConfiguration => ({
         path: process.env.COOKIE_SECURITY_PATH,
         httpOnly: !!process.env.COOKIE_SECURITY_HTTP_ONLY,
-        sameSite: <"Strict" | "Lax" | "None">process.env.COOKIE_SECURITY_SAME_SITE,
+        sameSite: <"strict" | "lax" | "none">process.env.COOKIE_SECURITY_SAME_SITE,
         secure: !!process.env.COOKIE_SECURITY_SECURE,
         domain: process.env.COOKIE_SECURITY_DOMAIN,
         secret: process.env.COOKIE_SECURITY_SECRET
