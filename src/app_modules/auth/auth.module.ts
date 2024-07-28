@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { RequestContextModule } from 'nestjs-request-context';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthenticationGuard } from './guards/authentication.guard';
+import { NotificationService } from '../notification/services/notification.service';
 
 @Module({
   providers: [
@@ -22,6 +23,7 @@ import { AuthenticationGuard } from './guards/authentication.guard';
     UserService,
     RevokedTokenService,
     JwtService,
+    NotificationService,
     {
       provide: APP_GUARD,
       useClass: AuthenticationGuard
