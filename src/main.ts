@@ -7,6 +7,7 @@ import runner from './runners/runner';
 import fastifyCookie from '@fastify/cookie';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
+import { JwtUtils } from './app_modules/auth/services/jwt-utils';
 
 (async () => {
   const logger = new Logger("Bootstrap")
@@ -21,11 +22,12 @@ import { Logger } from '@nestjs/common';
     credentials: true
   })
   // const securityUtils = app.get<SecurityUtilsService>(SecurityUtilsService)
+  const jwtUtils = app.get<JwtUtils>(JwtUtils)
   const port = configService.get<number>("App.port")
   await app.register(fastifyCookie as unknown as Parameters<NestFastifyApplication['register']>[0], {
     secret: configService.get<string>("SecurityCookie.secret")
   });
-  // runner(securityUtils)
+  // await runner(jwtUtils)
   await app.listen(port);
   logger.log(`Fastify listening on port ${port}`)
 })()

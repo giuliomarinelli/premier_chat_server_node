@@ -1,3 +1,4 @@
+import { JwtPayload } from './../Models/interfaces/jwt-payload.interface';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtConfiguration } from 'src/config/@types-config';
@@ -110,7 +111,7 @@ export class JwtUtils {
         try {
 
             await this.jwtService.verifyAsync(token, { ignoreExpiration, algorithms: ["HS256"], secret: jwtConfig.secret })
-            return true
+            return true // !token revocato
 
         } catch {
 
@@ -119,6 +120,22 @@ export class JwtUtils {
         }
 
     }
+
+
+    public async extractPayload(token: string, type: TokenType, ignoreExpiration: boolean): Promise<JwtPayload> {
+// Token revocato
+        if (! await this.verifyToken(token, type, ignoreExpiration))
+            throw new UnauthorizedException(`Invalid ${type.toLowerCase().replaceAll("_", " ")}`)
+
+        return this.jwtService.decode<JwtPayload>(token)
+
+    }
+
+
+    
+
+
+
 
 
 
