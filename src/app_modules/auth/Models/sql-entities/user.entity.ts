@@ -50,6 +50,9 @@ export class User {
     @Column({ type: "varchar", length: 20 })
     phoneNumber: string
 
+    @Column()
+    phoneNumberPrefixLength: number
+
     @Column({ type: "varchar", length: 20 })
     previousPhoneNumber: string
 
@@ -84,7 +87,8 @@ export class User {
         hashedPassword: string,
         totpSecret: string,
         msForActivation: number,
-        phoneNumber: string
+        phoneNumberPrefix: string,
+        phoneNumberBody: string
 
     ) {
 
@@ -96,7 +100,8 @@ export class User {
         this.email = email
         this.hashedPassword = hashedPassword
         this.totpSecret = totpSecret
-        this.phoneNumber = phoneNumber
+        this.phoneNumber = phoneNumberPrefix + phoneNumberBody
+        this.phoneNumberPrefixLength = phoneNumberPrefix.length
         this.mustActivateInto = Date.now() + msForActivation
         this.createdAt = this.updatedAt = Date.now()
         this.roles = [UserRole.USER]

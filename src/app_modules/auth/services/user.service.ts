@@ -15,7 +15,7 @@ export class UserService extends SelectQuery<User> {
         super()
     }
 
-   
+    
 
     // SELECT * FROM users u WHERE u.id = ? AND (u.is_enabled = true OR u.must_activate:into > ?)
 

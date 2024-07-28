@@ -32,7 +32,7 @@ export class AuthService {
         this.totpConfig = configService.get<TotpConfiguration>("Totp")
     }
 
-
+    public async register()
     
 
 }

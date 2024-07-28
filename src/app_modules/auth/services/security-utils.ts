@@ -1,4 +1,3 @@
-import { PhoneLocale } from './../../../../node_modules/@types/validator/index.d';
 import { SecurityCookieConfiguration, TotpConfiguration } from '../../../config/@types-config';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { randomBytes } from 'crypto'
@@ -52,8 +51,8 @@ export class SecurityUtils {
     }
 
 
-    public obscurePhoneNumber(phoneNumber: string): string {
-        return phoneNumber.slice(0, 3) + "*".repeat(phoneNumber.length - 1) + phoneNumber.slice(-3)
+    public obscurePhoneNumber(phoneNumber: string, phoneNumberPrefixLength: number): string {
+        return phoneNumber.slice(0, phoneNumberPrefixLength) + "*".repeat(phoneNumber.length - phoneNumberPrefixLength) + phoneNumber.slice(-3)
     }
 
 
