@@ -8,6 +8,7 @@ import fastifyCookie from '@fastify/cookie';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { JwtUtils } from './app_modules/auth/services/jwt-utils';
+import { HttpExceptionFilter } from './exception_handling/http-exception-filter';
 
 
 
@@ -23,6 +24,7 @@ import { JwtUtils } from './app_modules/auth/services/jwt-utils';
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true
   })
+  app.useGlobalFilters(new HttpExceptionFilter())
   // const securityUtils = app.get<SecurityUtilsService>(SecurityUtilsService)
   const jwtUtils = app.get<JwtUtils>(JwtUtils)
   const port = configService.get<number>("App.port")

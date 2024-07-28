@@ -16,11 +16,11 @@ import { AuthenticationGuard } from './guards/authentication.guard';
 @Module({
   providers: [
     AuthService,
-     SecurityUtils, 
-    JwtUtils, 
-    Argon2PasswordEncoder, 
-    UserService, 
-    RevokedTokenService, 
+    SecurityUtils,
+    JwtUtils,
+    Argon2PasswordEncoder,
+    UserService,
+    RevokedTokenService,
     JwtService,
     {
       provide: APP_GUARD,
@@ -30,4 +30,4 @@ import { AuthenticationGuard } from './guards/authentication.guard';
   ],
   imports: [TypeOrmModule.forFeature([User, RevokedToken]), RequestContextModule]
 })
-export class AuthModule {}
+export class AuthModule { }
