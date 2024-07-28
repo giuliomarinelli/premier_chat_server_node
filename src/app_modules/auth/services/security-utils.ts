@@ -1,5 +1,5 @@
 import { SecurityCookieConfiguration, TotpConfiguration } from '../../../config/@types-config';
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { randomBytes } from 'crypto'
 import { Encode } from '../Models/enums/encode.enum';
 import speakeasy from 'speakeasy'
@@ -41,6 +41,18 @@ export class SecurityUtils {
 
         }
 
+    }
+
+
+    public obscureEmail(email: string): string {
+        const i = email.indexOf("@")
+        if (i === -1) throw new InternalServerErrorException()
+        return email.charAt(0) + "*".repeat(i - 4) + email.slice(i - 2)
+    }
+
+
+    public obscurePhoneNumber(phoneNumber: string, phoneNumberPrefixLength: number): string {
+        return phoneNumber.slice(0, phoneNumberPrefixLength) + "*".repeat(phoneNumber.length - phoneNumberPrefixLength) + phoneNumber.slice(-3)
     }
 
 

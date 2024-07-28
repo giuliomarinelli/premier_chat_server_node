@@ -9,6 +9,8 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { JwtUtils } from './app_modules/auth/services/jwt-utils';
 import { HttpExceptionFilter } from './exception_handling/http-exception-filter';
+import { HttpExceptionLogger } from './file-logger/http-exception-logger';
+import { FileLoggerConfig } from './file-logger/file-logger-config';
 
 
 
@@ -25,13 +27,13 @@ import { HttpExceptionFilter } from './exception_handling/http-exception-filter'
     credentials: true
   })
   app.useGlobalFilters(new HttpExceptionFilter())
-  // const securityUtils = app.get<SecurityUtilsService>(SecurityUtilsService)
+  const securityUtils = app.get<SecurityUtils>(SecurityUtils)
   const jwtUtils = app.get<JwtUtils>(JwtUtils)
   const port = configService.get<number>("App.port")
   await app.register(fastifyCookie as unknown as Parameters<NestFastifyApplication['register']>[0], {
     secret: configService.get<string>("SecurityCookie.secret")
   });
-  await runner(jwtUtils)
+  await runner(securityUtils)
   await app.listen(port);
   logger.log(`Fastify listening on port ${port}`)
 })()

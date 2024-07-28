@@ -15,35 +15,40 @@ export class UserService extends SelectQuery<User> {
         super()
     }
 
-    // SELECT u FROM User u WHERE u.id = :id AND (u.enabled = true OR u.mustActivateInto > :now)
+    
+
+    // SELECT * FROM users u WHERE u.id = ? AND (u.is_enabled = true OR u.must_activate:into > ?)
 
     public async findValidUserById(id: UUID): Promise<Optional<User>> {
 
         const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
-            .where('u.id = :id', { id }).andWhere(new Brackets(qb =>
-                qb.where('u.isEnabled = true')
-                    .orWhere('u.mustActivateInto > :now', { now: Date.now() })
-            ))
+            .where('u.id = :id', { id })
+            .andWhere(
+                new Brackets(
+                    qb => qb.where('u.isEnabled = true')
+                        .orWhere('u.mustActivateInto > :now', { now: Date.now() })
+                )) 
 
         return await this.getOne(qb)
 
     }
 
-    // SELECT u FROM User u WHERE u.id = :id AND u.enabled = false AND u.mustActivateInto > :now
+    
+
+    // SELECT * FROM users u WHERE u.id = ? AND u.is_enabled = false AND u.must_activate_into > ?
 
     public async findValidNotEnabledUserById(id: UUID): Promise<Optional<User>> {
 
         const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
-            .where('u.id = :id', { id }).andWhere(new Brackets(qb =>
-                qb.where('u.isEnabled = false')
-                    .orWhere('u.mustActivateInto > :now', { now: Date.now() })
-            ))
+            .where('u.id = :id', { id })
+            .andWhere('u.isEnabled = false')
+            .andWhere('u.mustActivateInto > :now', { now: Date.now() })
 
         return await this.getOne(qb)
-
+        
     }
 
-    // SELECT u FROM User u WHERE u.id = :id AND u.enabled = true
+    // SELECT * FROM User u WHERE u.id = ? AND u.is_enabled = true
 
     public async findValidEnabledUserById(id: UUID): Promise<Optional<User>> {
 
@@ -75,10 +80,10 @@ export class UserService extends SelectQuery<User> {
     public async findValidNotEnabledUserByUsername(username: UUID): Promise<Optional<User>> {
 
         const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
-            .where('u.username = :username', { username }).andWhere(new Brackets(qb =>
-                qb.where('u.isEnabled = false')
-                    .orWhere('u.mustActivateInto > :now', { now: Date.now() })
-            ))
+            .where('u.username = :username', { username })
+            .andWhere('u.isEnabled = false')
+            .andWhere('u.mustActivateInto > :now', { now: Date.now() })
+
 
         return await this.getOne(qb)
 
@@ -116,10 +121,10 @@ export class UserService extends SelectQuery<User> {
     public async findValidNotEnabledUserByEmail(email: UUID): Promise<Optional<User>> {
 
         const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
-            .where('u.email = :email', { email }).andWhere(new Brackets(qb =>
-                qb.where('u.isEnabled = false')
-                    .orWhere('u.mustActivateInto > :now', { now: Date.now() })
-            ))
+            .where('u.email = :email', { email })
+            .andWhere('u.isEnabled = false')
+            .andWhere('u.mustActivateInto > :now', { now: Date.now() })
+
 
         return await this.getOne(qb)
 

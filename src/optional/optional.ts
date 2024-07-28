@@ -1,5 +1,6 @@
 import { NoSuchElementException } from "src/exception_handling/no-such-element-exception"
 
+
 export class Optional<T> {
 
     private value: T | undefined | null
@@ -9,7 +10,7 @@ export class Optional<T> {
     }
 
     public isPresent(): boolean {
-        return !!this.value
+        return !!this.value 
     }
 
     public isEmpty(): boolean {
