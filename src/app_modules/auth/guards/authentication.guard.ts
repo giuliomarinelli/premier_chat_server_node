@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { SecurityUtils } from '../services/security-utils';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { JwtUtils } from '../services/jwt-utils';
@@ -34,6 +34,11 @@ export class AuthenticationGuard implements CanActivate {
       const tokenPair: TokenPair = this.jwtUtils.extractHttpTokensFromContext(req)
 
       if (await this.jwtUtils.verifyToken(tokenPair.accessToken, TokenType.ACCESS_TOKEN, false)) return true
+
+      if (!await this.jwtUtils.verifyToken(tokenPair.accessToken, TokenType.ACCESS_TOKEN, true))
+        throw new UnauthorizedException("Invalid access token")
+
+      // REFRESH LATO SERVER
 
   }
 }
