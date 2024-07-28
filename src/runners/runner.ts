@@ -7,7 +7,7 @@ import { JwtUtils } from "src/app_modules/auth/services/jwt-utils"
 import { SecurityUtils } from "src/app_modules/auth/services/security-utils"
 import { v4 as uuidv4 } from 'uuid'
 
-const runner = async (jwtUtils: JwtUtils) => {
+const runner = async (securityUtils: SecurityUtils) => {
 
     // const logger = new Logger("Runner")
 
@@ -20,6 +20,9 @@ const runner = async (jwtUtils: JwtUtils) => {
     // console.log(await jwtUtils.extractPayload(refreshToken, TokenType.REFRESH_TOKEN, false))
 
     // jwtUtils.extractHttpTokensFromContext("COOKIE")
+
+    // console.log(securityUtils.obscureEmail("giulio.marinelli@icloud.com"))
+    // console.log(securityUtils.obscurePhoneNumber("+393495416977"))
 
 }
 
