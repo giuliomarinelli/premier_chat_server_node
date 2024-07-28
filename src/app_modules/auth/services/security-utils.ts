@@ -5,7 +5,6 @@ import { Encode } from '../Models/enums/encode.enum';
 import speakeasy from 'speakeasy'
 import { ConfigService } from '@nestjs/config';
 import { TotpWrapper } from '../Models/output-dto/totp-wrapper.output.dto';
-import fastifyCookie, { FastifyCookie, FastifyCookieOptions } from '@fastify/cookie';
 import { CookieOptions } from 'express';
 
 @Injectable()
@@ -87,7 +86,7 @@ export class SecurityUtils {
 
     }
 
-    public generateAuthenticationCookieOptions(token: string, session: boolean): CookieOptions {
+    public generateAuthenticationCookieOptions(session: boolean): CookieOptions {
 
         const { domain, httpOnly, path, sameSite, secure } = this.securityCookieConfig
 
@@ -104,6 +103,7 @@ export class SecurityUtils {
 
         if (session) {
 
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { maxAge, ...optSession } = opt
             return optSession          
 
