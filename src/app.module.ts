@@ -8,6 +8,7 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { MongooseModule, MongooseModuleFactoryOptions } from '@nestjs/mongoose';
 import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
 import { RequestContextModule } from 'nestjs-request-context';
+import { NotificationModule } from './app_modules/notification/notification.module';
 
 
 @Module({
@@ -33,7 +34,8 @@ import { RequestContextModule } from 'nestjs-request-context';
       useFactory: async (configService: ConfigService) => configService.get<MailerOptions>("Email"),
       inject: [ConfigService]
     }),
-    RequestContextModule
+    RequestContextModule,
+    NotificationModule
   ],
   controllers: [AppController],
   providers: [
