@@ -7,6 +7,7 @@ import config from './config/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { MongooseModule, MongooseModuleFactoryOptions } from '@nestjs/mongoose';
 import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
+import { RequestContextModule } from 'nestjs-request-context';
 
 
 @Module({
@@ -19,7 +20,7 @@ import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => configService.get<TypeOrmModuleOptions>("Data.sqlDB"), 
+      useFactory: async (configService: ConfigService) => configService.get<TypeOrmModuleOptions>("Data.sqlDB"),
       inject: [ConfigService]
     }),
     MongooseModule.forRootAsync({
@@ -31,9 +32,12 @@ import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => configService.get<MailerOptions>("Email"),
       inject: [ConfigService]
-    })
+    }),
+    RequestContextModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService
+  ],
 })
-export class AppModule {}
+export class AppModule { }

@@ -1,12 +1,18 @@
+import { TokenPairType } from './../Models/enums/token-pair-type.enum';
+import { JwtPayload } from './../Models/interfaces/jwt-payload.interface';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtConfiguration } from 'src/config/@types-config';
-import { UserService } from './user.service';
+import { JwtConfiguration } from '../../../config/@types-config';
 import { RevokedTokenService } from './revoked-token.service';
 import { JwtService } from '@nestjs/jwt';
 import { TokenType } from '../Models/enums/token-type.enum';
 import { UUID } from 'crypto';
 import { v4 as uuidv4 } from 'uuid'
+import { TokenPair } from '../Models/interfaces/token-pair.interface';
+import { FastifyRequest } from 'fastify';
+import { RevokedToken } from '../Models/sql-entities/revoked-token.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class JwtUtils {
@@ -24,21 +30,21 @@ export class JwtUtils {
 
     constructor(
         private readonly configService: ConfigService,
-        private readonly userService: UserService,
         private readonly revokedTokenService: RevokedTokenService,
-        private readonly jwtService: JwtService
+        private readonly jwtService: JwtService,
+        @InjectRepository(RevokedToken) private readonly revokedTokenRepository: Repository<RevokedToken>
     ) {
 
-        this.accessTokenConfig = configService.get<JwtConfiguration>("Jwt.accessToken")
-        this.refreshTokenConfig = configService.get<JwtConfiguration>("Jwt.refreshToken")
-        this.wsAccessTokenConfig = configService.get<JwtConfiguration>("Jwt.wsAccessToken")
-        this.wsRefreshTokenConfig = configService.get<JwtConfiguration>("Jwt.wsRefreshToken")
-        this.preAuthorizationTokenConfig = configService.get<JwtConfiguration>("Jwt.preAuthorizationToken")
-        this.activationTokenConfig = configService.get<JwtConfiguration>("Jwt.activationToken")
-        this.phoneNumberVerificationTokenConfig = configService.get<JwtConfiguration>("Jwt.phoneNumberVerificationToken")
-        this.emailVerificationTokenConfig = configService.get<JwtConfiguration>("Jwt.emailVerificationToken")
-        this.jwtIssuer = configService.get<string>("Jwt.issuer")
-        this.securityStrategy = configService.get<"COOKIE" | "HEADER">("App.securityStrategy")
+        this.accessTokenConfig = this.configService.get<JwtConfiguration>("Jwt.accessToken")
+        this.refreshTokenConfig = this.configService.get<JwtConfiguration>("Jwt.refreshToken")
+        this.wsAccessTokenConfig = this.configService.get<JwtConfiguration>("Jwt.wsAccessToken")
+        this.wsRefreshTokenConfig = this.configService.get<JwtConfiguration>("Jwt.wsRefreshToken")
+        this.preAuthorizationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.preAuthorizationToken")
+        this.activationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.activationToken")
+        this.phoneNumberVerificationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.phoneNumberVerificationToken")
+        this.emailVerificationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.emailVerificationToken")
+        this.jwtIssuer = this.configService.get<string>("Jwt.issuer")
+        this.securityStrategy = this.configService.get<"COOKIE" | "HEADER">("App.securityStrategy")
 
     }
 
@@ -110,7 +116,7 @@ export class JwtUtils {
         try {
 
             await this.jwtService.verifyAsync(token, { ignoreExpiration, algorithms: ["HS256"], secret: jwtConfig.secret })
-            return true
+            return !await this.isRevokedToken(token, type)
 
         } catch {
 
@@ -120,7 +126,115 @@ export class JwtUtils {
 
     }
 
-    
+
+    public async extractPayload(token: string, type: TokenType, ignoreExpiration: boolean): Promise<JwtPayload> {
+        
+        if (await this.isRevokedToken(token, type))
+            throw new UnauthorizedException(`Revoked ${type.toLowerCase().replaceAll("_", " ")}`)
+
+        if (!await this.verifyToken(token, type, ignoreExpiration))
+            throw new UnauthorizedException(`Invalid ${type.toLowerCase().replaceAll("_", " ")}`)
+
+        return this.jwtService.decode<JwtPayload>(token)
+
+    }
+
+
+    public extractHttpTokensFromContext(req: FastifyRequest): TokenPair | string {
+
+        switch (this.securityStrategy) {
+
+            case "COOKIE":
+
+                const accessToken: string = req.cookies['__access_token']
+                if (!accessToken) throw new UnauthorizedException("No provided access token")
+
+                const refreshToken: string = req.cookies['__refresh_token']
+                if (!refreshToken) throw new UnauthorizedException("No provided refresh token")
+
+                return <TokenPair>{
+                    accessToken,
+                    refreshToken,
+                    type: TokenPairType.HTTP
+                }
+
+            case "HEADER":
+
+                const authHeader: string | undefined = req.headers.authorization
+
+                if (!authHeader || !authHeader.startsWith('Bearer '))
+                    throw new UnauthorizedException("No provided access token")
+
+                return <string>authHeader.split(" ")[1]
+
+        }
+
+    }
+
+
+    // Web Socket estrazione token =======================================
+
+    public async revokeToken(token: string, type?: TokenType): Promise<void> {
+
+        let revokedToken: RevokedToken
+
+        if (type) {
+
+            const jti = (await this.extractPayload(token, type, true)).jti
+            revokedToken = new RevokedToken(token, jti)
+
+        } else {
+
+            revokedToken = new RevokedToken(token)
+
+        }
+
+        await this.revokedTokenRepository.save(revokedToken)
+
+    }
+
+
+    public async isRevokedToken(token: string, type?: TokenType): Promise<boolean> {
+
+        if (type) {
+
+            const jti = (await this.extractPayload(token, type, true)).jti
+            return (await this.revokedTokenService.findByJti(jti)).isPresent()
+
+        }
+
+        return (await this.revokedTokenService.findByToken(token)).isPresent()
+
+    }
+
+
+    public async refreshTokenPair(refreshToken: string, type: TokenPairType): Promise<TokenPair> {
+
+        switch (type) {
+
+            case TokenPairType.HTTP:
+                const payload: JwtPayload = await this.extractPayload(refreshToken, TokenType.REFRESH_TOKEN, false)
+                await this.revokeToken(refreshToken, TokenType.REFRESH_TOKEN)
+                return {
+                    accessToken: await this.generateToken(payload.sub, TokenType.ACCESS_TOKEN, payload.res),
+                    refreshToken: await this.generateToken(payload.sub, TokenType.REFRESH_TOKEN, payload.res),
+                    type
+                }
+
+            case TokenPairType.WS:
+                const _payload: JwtPayload = await this.extractPayload(refreshToken, TokenType.WS_REFRESH_TOKEN, false)
+                await this.revokeToken(refreshToken, TokenType.WS_REFRESH_TOKEN)
+                return {
+                    accessToken: await this.generateToken(_payload.sub, TokenType.WS_ACCESS_TOKEN, _payload.res),
+                    refreshToken: await this.generateToken(_payload.sub, TokenType.WS_REFRESH_TOKEN, _payload.res),
+                    type
+                }
+
+        }
+
+    }
+
+
 
 
 }
