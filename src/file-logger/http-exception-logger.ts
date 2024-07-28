@@ -19,7 +19,6 @@ export class HttpExceptionLogger extends Logger implements LoggerService {
             return this.logger
         } else if (logFilePath && context) {
             this.logger = new HttpExceptionLogger(logFilePath, context)
-            console.log(this.logger.logFilePath, this.logger.context)
             return this.logger
         }
     }
