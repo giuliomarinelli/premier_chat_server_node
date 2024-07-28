@@ -50,7 +50,7 @@ export interface SecurityCookieConfiguration {
 
     path: string
     httpOnly: boolean
-    sameSite: "Strict" | "Lax" | "None"
+    sameSite: "strict" | "lax" | "none"
     secure: boolean
     domain: string
     secret: string
