@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './app_modules/auth/auth.module';
@@ -8,7 +8,6 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { MongooseModule, MongooseModuleFactoryOptions } from '@nestjs/mongoose';
 import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
 import { RequestContextModule } from 'nestjs-request-context';
-import { RequestMiddleware } from './app_modules/middleware/request-middleware';
 
 
 @Module({
@@ -21,7 +20,7 @@ import { RequestMiddleware } from './app_modules/middleware/request-middleware';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => configService.get<TypeOrmModuleOptions>("Data.sqlDB"), 
+      useFactory: async (configService: ConfigService) => configService.get<TypeOrmModuleOptions>("Data.sqlDB"),
       inject: [ConfigService]
     }),
     MongooseModule.forRootAsync({
@@ -39,12 +38,4 @@ import { RequestMiddleware } from './app_modules/middleware/request-middleware';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {
-
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(RequestMiddleware)
-      .forRoutes({ path: '*', method: RequestMethod.ALL });
-  }
-
-}
+export class AppModule { }

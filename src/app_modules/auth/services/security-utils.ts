@@ -1,10 +1,19 @@
+import { TotpConfiguration } from '../../../config/@types-config';
 import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'crypto'
 import { Encode } from '../Models/enums/encode.enum';
 import speakeasy from 'speakeasy'
+import { ConfigService } from '@nestjs/config';
+import { TotpWrapper } from '../Models/output-dto/totp-wrapper.output.dto';
 
 @Injectable()
 export class SecurityUtils {
+
+    private totpConfig: TotpConfiguration
+
+    constructor(private readonly configService: ConfigService) {
+        this.totpConfig = configService.get<TotpConfiguration>("Totp")
+    }
 
     public generateSecret(bytes: number, encode: Encode): string {
 
@@ -24,7 +33,50 @@ export class SecurityUtils {
                 return hexPrefix + buffer.toString(encode)
 
         }
-       
+
+    }
+
+    
+    public generateTotpSecret(): string {
+        return this.generateSecret(this.totpConfig.bytes, Encode.BASE_32)
+    }
+
+
+    public generateTotp(base32Secret: string): TotpWrapper {
+
+        const TOTP = speakeasy.totp({
+            secret: base32Secret,
+            encoding: 'base32',
+            digits: this.totpConfig.digits,
+            step: this.totpConfig.period,
+            algorithm: "sha256"
+        })
+
+        const now = new Date()
+        now.setMilliseconds(0)
+        const generatedAt: number = now.getTime()
+        const expiresAt: number = generatedAt + this.totpConfig.period * 1000
+
+        return {
+            TOTP,
+            generatedAt,
+            expiresAt
+        }
+
+    }
+
+    public verifyTotp(totp: string, base32Secret: string): boolean {
+
+        return speakeasy.totp.verify({
+            secret: base32Secret,
+            encoding: 'base32',
+            token: totp,   
+            digits: this.totpConfig.digits,      
+            step: this.totpConfig.period,       
+            algorithm: 'sha256',
+            window: 0      
+          });
+
     }
 
 }
