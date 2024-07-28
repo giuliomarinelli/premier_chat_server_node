@@ -47,8 +47,8 @@ export class User {
     @Column({ type: "simple-array" })
     _2FaStrategies: _2FaStrategy[]
 
-    @Column({ type: "varchar", length: 20 })
-    phoneNumber: string
+    @Column({ type: "varchar", length: 20, nullable: true })
+    phoneNumber: string | null
 
     @Column()
     phoneNumberPrefixLength: number
@@ -100,8 +100,8 @@ export class User {
         this.email = email
         this.hashedPassword = hashedPassword
         this.totpSecret = totpSecret
-        this.phoneNumber = phoneNumberPrefix + phoneNumberBody
-        this.phoneNumberPrefixLength = phoneNumberPrefix.length
+        this.phoneNumber = phoneNumberPrefix && phoneNumberBody ? phoneNumberPrefix && phoneNumberBody : null
+        this.phoneNumberPrefixLength = phoneNumberPrefix ? phoneNumberPrefix.length : 0
         this.mustActivateInto = Date.now() + msForActivation
         this.createdAt = this.updatedAt = Date.now()
         this.roles = [UserRole.USER]
