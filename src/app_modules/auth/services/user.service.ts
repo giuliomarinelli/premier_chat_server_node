@@ -27,7 +27,7 @@ export class UserService extends SelectQuery<User> {
                 new Brackets(
                     qb => qb.where('u.isEnabled = true')
                         .orWhere('u.mustActivateInto > :now', { now: Date.now() })
-                )) // da notare che i qb esterno e interno appartengono a scope indipendenti
+                )) 
 
         return await this.getOne(qb)
 

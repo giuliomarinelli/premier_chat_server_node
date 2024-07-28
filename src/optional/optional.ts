@@ -1,7 +1,5 @@
 import { NoSuchElementException } from "src/exception_handling/no-such-element-exception"
 
-// Ecco come ho implementato la classe Optional<T>
-// Ci sono, come in Java, i metodi isPresent(), isEmpty() e get()
 
 export class Optional<T> {
 
@@ -12,7 +10,7 @@ export class Optional<T> {
     }
 
     public isPresent(): boolean {
-        return !!this.value // qui sfruttiamo giochi sintattici concisi caratteristici di TypeScript
+        return !!this.value 
     }
 
     public isEmpty(): boolean {
