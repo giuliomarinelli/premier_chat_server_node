@@ -16,7 +16,7 @@ import { ConfirmRegistrationOutputDto } from '../Models/output-dto/confirm-regis
 @Injectable()
 export class AuthService {
 
-    private readonly autgorizationStrategy: AuthorizationStrategy
+    private readonly authorizationStrategy: AuthorizationStrategy
     private readonly activationTokenConfig: JwtConfiguration
     private readonly totpConfig: TotpConfiguration
 
@@ -29,21 +29,31 @@ export class AuthService {
         private readonly securityUtils: SecurityUtils,
         private readonly jwtUtils: JwtUtils
     ) {
-        this.autgorizationStrategy = configService.get<AuthorizationStrategy>("App.securityStrategy")
-        this.activationTokenConfig = configService.get<JwtConfiguration>("Jwt.activationToken")
-        this.totpConfig = configService.get<TotpConfiguration>("Totp")
+        this.authorizationStrategy = this.configService.get<AuthorizationStrategy>("App.securityStrategy")
+        this.activationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.activationToken")
+        this.totpConfig = this.configService.get<TotpConfiguration>("Totp")
     }
 
     public async register(userPostInputDto: UserPostInputDto): Promise<ConfirmRegistrationOutputDto> {
 
-        const { firstName, lastName, dateOfBirth, gender, username, email, password, phoneNumberPrefix, phoneNumberBody } = userPostInputDto
+        const {
+            firstName,
+            lastName,
+            dateOfBirth,
+            gender,
+            username,
+            email,
+            password,
+            phoneNumberPrefix,
+            phoneNumberBody
+        } = userPostInputDto
 
         if (phoneNumberPrefix && !phoneNumberBody)
             throw new BadRequestException("'phoneNumberPrefix' was entered but 'phoneNumberBody' is empty")
 
         if (!phoneNumberPrefix && phoneNumberBody)
             throw new BadRequestException("'phoneNumberPrefix' is empty while 'phoneNumberBody' was entered")
-        
+
         const user = new User(
             firstName,
             lastName,
@@ -66,7 +76,7 @@ export class AuthService {
         }
 
         return {
-            statusCode:  HttpStatus.CREATED,
+            statusCode: HttpStatus.CREATED,
             timestamp: new Date().toISOString(),
             message: "Registered successfully, an email with activation token was sent to user",
             obscuredEmail: this.securityUtils.obscureEmail(email)
