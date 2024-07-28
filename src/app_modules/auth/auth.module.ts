@@ -9,9 +9,10 @@ import { RevokedToken } from './Models/sql-entities/revoked-token.entity';
 import { UserService } from './services/user.service';
 import { RevokedTokenService } from './services/revoked-token.service';
 import { JwtService } from '@nestjs/jwt';
+import { RequestContextModule } from 'nestjs-request-context';
 
 @Module({
   providers: [AuthService, SecurityUtils, JwtUtils, Argon2PasswordEncoder, UserService, RevokedTokenService, JwtService],
-  imports: [TypeOrmModule.forFeature([User, RevokedToken])]
+  imports: [TypeOrmModule.forFeature([User, RevokedToken]), RequestContextModule]
 })
 export class AuthModule {}

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@fastify/cookie": "^9.3.1",
+    "@fastify/request-context": "^5.1.0",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.2.3",

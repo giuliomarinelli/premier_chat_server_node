@@ -1,5 +1,5 @@
 import { JwtPayload } from './../Models/interfaces/jwt-payload.interface';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtConfiguration } from 'src/config/@types-config';
 import { UserService } from './user.service';
@@ -8,6 +8,9 @@ import { JwtService } from '@nestjs/jwt';
 import { TokenType } from '../Models/enums/token-type.enum';
 import { UUID } from 'crypto';
 import { v4 as uuidv4 } from 'uuid'
+import { AuthorizationStrategy } from '../Models/interfaces/authorization-strategy.type';
+import { TokenPair } from '../Models/interfaces/token-pair.interface';
+import { FastifyRequest } from 'fastify';
 
 @Injectable()
 export class JwtUtils {
@@ -132,7 +135,13 @@ export class JwtUtils {
     }
 
 
-    
+    public extractHttpTokensFromContext(strategy: AuthorizationStrategy): TokenPair | string {
+
+        console.log(this.req)
+
+        return ""
+
+    }
 
 
 

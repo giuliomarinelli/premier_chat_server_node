@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './app_modules/auth/auth.module';
@@ -7,6 +7,8 @@ import config from './config/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { MongooseModule, MongooseModuleFactoryOptions } from '@nestjs/mongoose';
 import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
+import { RequestContextModule } from 'nestjs-request-context';
+import { RequestMiddleware } from './app_modules/middleware/request-middleware';
 
 
 @Module({
@@ -31,9 +33,18 @@ import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => configService.get<MailerOptions>("Email"),
       inject: [ConfigService]
-    })
+    }),
+    RequestContextModule
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
+
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RequestMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+
+}

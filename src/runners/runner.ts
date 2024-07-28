@@ -19,6 +19,8 @@ const runner = async (jwtUtils: JwtUtils) => {
 
     // console.log(await jwtUtils.extractPayload(refreshToken, TokenType.REFRESH_TOKEN, false))
 
+    jwtUtils.extractHttpTokensFromContext("COOKIE")
+
 }
 
 export default runner
