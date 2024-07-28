@@ -9,6 +9,8 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { JwtUtils } from './app_modules/auth/services/jwt-utils';
 import { HttpExceptionFilter } from './exception_handling/http-exception-filter';
+import { HttpExceptionLogger } from './file-logger/http-exception-logger';
+import { FileLoggerConfig } from './file-logger/file-logger-config';
 
 
 
