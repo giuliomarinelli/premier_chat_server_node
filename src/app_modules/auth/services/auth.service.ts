@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../Models/sql-entities/user.entity';
 import { Repository } from 'typeorm';
@@ -120,6 +120,24 @@ export class AuthService {
         } catch {
             throw new NotFoundException("Resource not found")
         }
+    }
+
+    public async usernameAndPasswordAuthentication(username: string, password: string): Promise<UUID> {
+
+        const userOpt: Optional<User> = await this.userService.findValidNotEnabledUserByUsername(username)
+        
+        if (userOpt.isEmpty())
+            throw new UnauthorizedException("Username and/or password are wrong")
+
+        const user: User = userOpt.get()
+
+        if (!await this.encoder.matches(password, user.hashedPassword))
+            throw new UnauthorizedException("Username and/or password are wrong")
+
+        // Credenziali verificate => Corrette
+
+        return user.id
+
     }
 
 

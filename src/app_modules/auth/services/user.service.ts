@@ -63,7 +63,7 @@ export class UserService extends SelectQuery<User> {
     // ==============================================================================================================
     // SELECT u FROM User u WHERE u.username = :username AND (u.enabled = true OR u.mustActivateInto > :now)
 
-    public async findValidUserByUsername(username: UUID): Promise<Optional<User>> {
+    public async findValidUserByUsername(username: string): Promise<Optional<User>> {
 
         const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
             .where('u.username = :username', { username }).andWhere(new Brackets(qb =>
@@ -77,7 +77,7 @@ export class UserService extends SelectQuery<User> {
 
     // SELECT u FROM User u WHERE u.username = :username AND u.enabled = false AND u.mustActivateInto > :now
 
-    public async findValidNotEnabledUserByUsername(username: UUID): Promise<Optional<User>> {
+    public async findValidNotEnabledUserByUsername(username: string): Promise<Optional<User>> {
 
         const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
             .where('u.username = :username', { username })
@@ -91,7 +91,7 @@ export class UserService extends SelectQuery<User> {
 
     // SELECT u FROM User u WHERE u.username = :username AND u.enabled = true
 
-    public async findValidEnabledUserByUsername(username: UUID): Promise<Optional<User>> {
+    public async findValidEnabledUserByUsername(username: string): Promise<Optional<User>> {
 
         const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
             .where('u.username = :username', { username })
@@ -104,7 +104,7 @@ export class UserService extends SelectQuery<User> {
     // ==============================================================================================================
     // SELECT u FROM User u WHERE u.email = :email AND (u.enabled = true OR u.mustActivateInto > :now)
 
-    public async findValidUserByEmail(email: UUID): Promise<Optional<User>> {
+    public async findValidUserByEmail(email: string): Promise<Optional<User>> {
 
         const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
             .where('u.email = :email', { email }).andWhere(new Brackets(qb =>
@@ -118,7 +118,7 @@ export class UserService extends SelectQuery<User> {
 
     // SELECT u FROM User u WHERE u.username = :username AND u.enabled = false AND u.mustActivateInto > :now
 
-    public async findValidNotEnabledUserByEmail(email: UUID): Promise<Optional<User>> {
+    public async findValidNotEnabledUserByEmail(email: string): Promise<Optional<User>> {
 
         const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
             .where('u.email = :email', { email })
@@ -132,7 +132,7 @@ export class UserService extends SelectQuery<User> {
 
     // SELECT u FROM User u WHERE u.username = :username AND u.enabled = true
 
-    public async findValidEnabledUserByEmail(email: UUID): Promise<Optional<User>> {
+    public async findValidEnabledUserByEmail(email: string): Promise<Optional<User>> {
 
         const qb: SelectQueryBuilder<User> = this.userRepository.createQueryBuilder('u')
             .where('u.email = :email', { email })
