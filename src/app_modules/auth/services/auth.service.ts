@@ -13,7 +13,6 @@ import { JwtConfiguration, TotpConfiguration } from 'src/config/@types-config';
 import { UserPostInputDto } from '../Models/input-dto/user-post.input.dto';
 import { ConfirmRegistrationOutputDto } from '../Models/output-dto/confirm-registration.output.dto';
 import { ConfirmOutputDto } from '../Models/output-dto/confirm.output.dto';
-import { JwtPayload } from '../Models/interfaces/jwt-payload.interface';
 import { TokenType } from '../Models/enums/token-type.enum';
 import { Optional } from 'src/optional/optional';
 import { UUID } from 'crypto';
@@ -102,8 +101,22 @@ export class AuthService {
             throw new BadRequestException(`Time for account activation is over`)
 
         try {
+            
             const userId: UUID = (await this.jwtUtils.extractPayload(activationToken, TokenType.ACTIVATION_TOKEN, false)).sub
-            userOpt: Optional<User> = await this.userService.findValidUserById()
+            const userOpt: Optional<User> = await this.userService.findValidUserById(userId)
+            if (userOpt.isEmpty())
+                throw new NotFoundException("Resource not found")
+            const user: User = userOpt.get()
+            user.isEnabled = true
+            user.updatedAt = Date.now()
+            await this.userRepository.save(user)
+            await this.jwtUtils.revokeToken(activationToken, TokenType.ACTIVATION_TOKEN)
+            return {
+                statusCode: HttpStatus.OK,
+                timestamp: new Date().toISOString(),
+                message: "Account activated successfully"
+            }
+
         } catch {
             throw new NotFoundException("Resource not found")
         }
