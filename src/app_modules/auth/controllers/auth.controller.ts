@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, ForbiddenException, HttpCode, HttpStatus, Post, Query, Res, UsePipes, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, HttpCode, HttpStatus, Post, Query, Req, Res, UsePipes, ValidationPipe } from '@nestjs/common';
 import { UserPostInputDto } from '../Models/input-dto/user-post.input.dto';
 import { ConfirmRegistrationOutputDto } from '../Models/output-dto/confirm-registration.output.dto';
 import { AuthService } from '../services/auth.service';
@@ -18,6 +18,7 @@ import { TokenType } from '../Models/enums/token-type.enum';
 import { Optional } from 'src/optional/optional';
 import { User } from '../Models/sql-entities/user.entity';
 import { _2FaStrategy } from '../Models/enums/_2fa-strategy.enum';
+import { FastifyRequest } from 'fastify';
 
 @Controller('auth')
 export class AuthController {
@@ -25,6 +26,7 @@ export class AuthController {
     // Per il momento ignoro la security strategy implementando esclusivamente l'autenticazione basata sui cookie
 
     private readonly totpConfig: TotpConfiguration
+    private tokenNames: Map<TokenType, string> = new Map()
 
     constructor(
         private readonly configService: ConfigService,
@@ -33,7 +35,11 @@ export class AuthController {
         private readonly userService: UserService,
         private readonly securityUtils: SecurityUtils,
     ) {
-        this.totpConfig = configService.get<TotpConfiguration>("TotpConfig")
+        this.totpConfig = this.configService.get<TotpConfiguration>("TotpConfig")
+        this.tokenNames.set(TokenType.ACCESS_TOKEN, "__access_token")
+        this.tokenNames.set(TokenType.REFRESH_TOKEN, "__refresh_token")
+        this.tokenNames.set(TokenType.WS_ACCESS_TOKEN, "__ws_access_token")
+        this.tokenNames.set(TokenType.WS_REFRESH_TOKEN, "__access_token")
     }
 
     @Post("/register")
@@ -72,22 +78,22 @@ export class AuthController {
         if (!await this.authService.is2FaEnabled(userId)) {
 
             res.setCookie(
-                "__access_token",
+                this.tokenNames.get(TokenType.ACCESS_TOKEN),
                 authenticationTokens.get(TokenPairType.HTTP).accessToken,
                 this.securityUtils.generateAuthenticationCookieOptions(!restore)
             )
             res.setCookie(
-                "__refresh_token",
+                this.tokenNames.get(TokenType.REFRESH_TOKEN),
                 authenticationTokens.get(TokenPairType.HTTP).refreshToken,
                 this.securityUtils.generateAuthenticationCookieOptions(!restore)
             )
             res.setCookie(
-                "__ws_access_token",
+                this.tokenNames.get(TokenType.WS_ACCESS_TOKEN),
                 authenticationTokens.get(TokenPairType.WS).accessToken,
                 this.securityUtils.generateAuthenticationCookieOptions(!restore)
             )
             res.setCookie(
-                "__ws_refresh_token",
+                this.tokenNames.get(TokenType.WS_REFRESH_TOKEN),
                 authenticationTokens.get(TokenPairType.WS).refreshToken,
                 this.securityUtils.generateAuthenticationCookieOptions(!restore)
             )
@@ -119,6 +125,31 @@ export class AuthController {
                 obscuredPhoneNumber: _sms ? this.securityUtils.obscurePhoneNumber(phoneNumber, phoneNumberPrefixLength) : undefined
             }
         }
+    }
+
+    @Post("/logout")
+    @HttpCode(HttpStatus.OK)
+    public async logout(@Req() req: FastifyRequest, @Res() res: FastifyReply): Promise<ConfirmOutputDto> {
+
+        const tokens: Map<TokenType, string> = new Map()
+        tokens.set(TokenType.ACCESS_TOKEN, req.cookies[this.tokenNames.get(TokenType.ACCESS_TOKEN)])
+        tokens.set(TokenType.REFRESH_TOKEN, req.cookies[this.tokenNames.get(TokenType.REFRESH_TOKEN)])
+        tokens.set(TokenType.WS_ACCESS_TOKEN, req.cookies[this.tokenNames.get(TokenType.WS_ACCESS_TOKEN)])
+        tokens.set(TokenType.WS_REFRESH_TOKEN, req.cookies[this.tokenNames.get(TokenType.WS_REFRESH_TOKEN)])
+
+        for (const key of tokens.keys()) {
+
+            await this.jwtUtils.revokeToken(tokens.get(key), key)
+            res.clearCookie[this.tokenNames.get(key)]
+
+        }
+
+        return {
+            statusCode: HttpStatus.OK,
+            timestamp: new Date().toISOString(),
+            message: "Logged out successfully"
+        }
+
     }
 
 
