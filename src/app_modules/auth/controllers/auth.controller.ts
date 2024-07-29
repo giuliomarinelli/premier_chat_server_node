@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, ForbiddenException, HttpCode, HttpStatus, Post, Query, Req, Res, UsePipes, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, HttpCode, HttpStatus, Param, Post, Query, Req, Res, UsePipes, ValidationPipe } from '@nestjs/common';
 import { UserPostInputDto } from '../Models/input-dto/user-post.input.dto';
 import { ConfirmRegistrationOutputDto } from '../Models/output-dto/confirm-registration.output.dto';
 import { AuthService } from '../services/auth.service';
@@ -19,6 +19,9 @@ import { Optional } from 'src/optional/optional';
 import { User } from '../Models/sql-entities/user.entity';
 import { _2FaStrategy } from '../Models/enums/_2fa-strategy.enum';
 import { FastifyRequest } from 'fastify';
+import { ContactVerificationDto } from '../Models/input-dto/contact-verification.dto';
+import { ConfirmWithTotpMetadataDto } from '../Models/output-dto/confirm-with-totp-metadata.dto';
+import { TotpMetadataDto } from '../Models/output-dto/totp-metadata.dto.output';
 
 @Controller('auth')
 export class AuthController {
@@ -40,6 +43,7 @@ export class AuthController {
         this.tokenNames.set(TokenType.REFRESH_TOKEN, "__refresh_token")
         this.tokenNames.set(TokenType.WS_ACCESS_TOKEN, "__ws_access_token")
         this.tokenNames.set(TokenType.WS_REFRESH_TOKEN, "__access_token")
+        this.tokenNames.set(TokenType.PRE_AUTHORIZATION_TOKEN, "__pre_authorization_token")
     }
 
     @Post("/register")
@@ -152,5 +156,42 @@ export class AuthController {
 
     }
 
+    @Post("/2-factors-authentication/totp/:strategy/request")
+    @HttpCode(HttpStatus.OK)
+    @UsePipes(new ValidationPipe({ transform: true }))
+    public async requestTotpFor2Fa(@Param("strategy") strategy: string, @Body() contactVerificationDto: ContactVerificationDto, @Req() req: FastifyReply): Promise<ConfirmWithTotpMetadataDto> {
+
+        const _strategy: _2FaStrategy = this.securityUtils.stringTo_2FaStrategy(strategy)
+
+        const preAuthorizationToken: string = req.cookies[this.tokenNames.get(TokenType.PRE_AUTHORIZATION_TOKEN)]
+
+        if (!preAuthorizationToken.trim())
+            throw new ForbiddenException("You don't have the permissions to access this resource")
+
+        const { contact } = contactVerificationDto
+
+        let endOfMessage: string 
+
+        switch (_strategy) {
+
+            case _2FaStrategy.EMAIL:
+                endOfMessage = "to your email address"
+                break
+
+            case _2FaStrategy.SMS:
+                endOfMessage = "via SMS to your phone number"
+
+        }
+        
+        const metadata: TotpMetadataDto = await this.authService.verifyContactBeforeGenerating2faTotp(preAuthorizationToken, contact, _strategy)
+
+        return {
+            statusCode: HttpStatus.OK,
+            timestamp: new Date().toISOString(),
+            message: `A ${this.totpConfig.digits} digits code valid for ${this.totpConfig.period} seconds has been sent ${endOfMessage}`,
+            ...metadata
+        }
+
+    }
 
 }
