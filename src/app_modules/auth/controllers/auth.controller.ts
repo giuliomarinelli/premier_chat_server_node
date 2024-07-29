@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, ForbiddenException, HttpCode, HttpStatus, Param, Post, Query, Req, Res, UsePipes, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, HttpCode, HttpStatus, Param, Post, Query, Req, Res, UnauthorizedException, UsePipes, ValidationPipe } from '@nestjs/common';
 import { UserPostInputDto } from '../Models/input-dto/user-post.input.dto';
 import { ConfirmRegistrationOutputDto } from '../Models/output-dto/confirm-registration.output.dto';
 import { AuthService } from '../services/auth.service';
@@ -22,6 +22,9 @@ import { FastifyRequest } from 'fastify';
 import { ContactVerificationDto } from '../Models/input-dto/contact-verification.dto';
 import { ConfirmWithTotpMetadataDto } from '../Models/output-dto/confirm-with-totp-metadata.dto';
 import { TotpMetadataDto } from '../Models/output-dto/totp-metadata.dto.output';
+import { TotpInputDto } from '../Models/input-dto/totp.input.dto';
+import { JwtPayload } from '../Models/interfaces/jwt-payload.interface';
+
 
 @Controller('auth')
 export class AuthController {
@@ -165,12 +168,12 @@ export class AuthController {
 
         const preAuthorizationToken: string = req.cookies[this.tokenNames.get(TokenType.PRE_AUTHORIZATION_TOKEN)]
 
-        if (!preAuthorizationToken.trim())
+        if (!preAuthorizationToken || !preAuthorizationToken.trim())
             throw new ForbiddenException("You don't have the permissions to access this resource")
 
         const { contact } = contactVerificationDto
 
-        let endOfMessage: string 
+        let endOfMessage: string
 
         switch (_strategy) {
 
@@ -182,7 +185,7 @@ export class AuthController {
                 endOfMessage = "via SMS to your phone number"
 
         }
-        
+
         const metadata: TotpMetadataDto = await this.authService.verifyContactBeforeGenerating2faTotp(preAuthorizationToken, contact, _strategy)
 
         return {
@@ -190,6 +193,64 @@ export class AuthController {
             timestamp: new Date().toISOString(),
             message: `A ${this.totpConfig.digits} digits code valid for ${this.totpConfig.period} seconds has been sent ${endOfMessage}`,
             ...metadata
+        }
+
+    }
+
+    @Post("/2-factors-authentication/totp/verify")
+    @HttpCode(HttpStatus.OK)
+    @UsePipes(new ValidationPipe({ transform: true }))
+    public async verifyTotpFor2Fa(@Body() totpInputDto: TotpInputDto, @Req() req: FastifyRequest, @Res()  res: FastifyReply): Promise<ConfirmOutputDto> {
+
+        const preAuthorizationToken = req.cookies[this.tokenNames.get(TokenType.PRE_AUTHORIZATION_TOKEN)]
+
+        if (!preAuthorizationToken || !preAuthorizationToken.trim())
+            throw new ForbiddenException("You don't have the permissions to access this resource")
+
+        const payload: JwtPayload = await this.jwtUtils.extractPayload(preAuthorizationToken, TokenType.PRE_AUTHORIZATION_TOKEN, false)
+        const userId: UUID = payload.sub
+        const restore: boolean = payload.res
+
+        const userOpt: Optional<User> = await this.userService.findValidEnabledUserById(userId)
+
+        if (userOpt.isEmpty()) throw new ForbiddenException("You don't have the permissions to access this resource")
+
+        const user: User = userOpt.get()
+
+        if (!this.securityUtils.verifyTotp(totpInputDto.totp, user.totpSecret)) {
+
+            await this.jwtUtils.revokeToken(preAuthorizationToken, TokenType.PRE_AUTHORIZATION_TOKEN)
+            throw new UnauthorizedException("The code entered for 2 factors authentication is wrong")
+
+        }
+
+        const authenticationTokens: Map<TokenPairType, TokenPair> = await this.authService.performAuthentication(userId, restore)
+
+        res.setCookie(
+            this.tokenNames.get(TokenType.ACCESS_TOKEN),
+            authenticationTokens.get(TokenPairType.HTTP).accessToken,
+            this.securityUtils.generateAuthenticationCookieOptions(!restore)
+        )
+        res.setCookie(
+            this.tokenNames.get(TokenType.REFRESH_TOKEN),
+            authenticationTokens.get(TokenPairType.HTTP).refreshToken,
+            this.securityUtils.generateAuthenticationCookieOptions(!restore)
+        )
+        res.setCookie(
+            this.tokenNames.get(TokenType.WS_ACCESS_TOKEN),
+            authenticationTokens.get(TokenPairType.WS).accessToken,
+            this.securityUtils.generateAuthenticationCookieOptions(!restore)
+        )
+        res.setCookie(
+            this.tokenNames.get(TokenType.WS_REFRESH_TOKEN),
+            authenticationTokens.get(TokenPairType.WS).refreshToken,
+            this.securityUtils.generateAuthenticationCookieOptions(!restore)
+        )
+
+        return {
+            statusCode: HttpStatus.OK,
+            timestamp: new Date().toISOString(),
+            message: "Logged in successfully"
         }
 
     }
