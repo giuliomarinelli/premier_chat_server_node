@@ -1,11 +1,12 @@
 import { SecurityCookieConfiguration, TotpConfiguration } from '../../../config/@types-config';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { randomBytes } from 'crypto'
 import { Encode } from '../Models/enums/encode.enum';
 import speakeasy from 'speakeasy'
 import { ConfigService } from '@nestjs/config';
 import { TotpWrapper } from '../Models/output-dto/totp-wrapper.output.dto';
 import { CookieOptions } from 'express';
+import { _2FaStrategy } from '../Models/enums/_2fa-strategy.enum';
 
 @Injectable()
 export class SecurityUtils {
@@ -121,6 +122,13 @@ export class SecurityUtils {
 
         }
 
+    }
+
+    public stringTo_2FaStrategy(value: string): _2FaStrategy {
+        value = value.toUpperCase().replaceAll("-", "_")
+        const _enum = (Object.values(_2FaStrategy) as string[]).includes(value) ? _2FaStrategy[value as keyof typeof _2FaStrategy] : undefined;
+        if (!_enum) throw new BadRequestException("Invalid 'strategy' path param")
+        return _enum
     }
 
 }
