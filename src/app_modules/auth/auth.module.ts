@@ -13,6 +13,7 @@ import { RequestContextModule } from 'nestjs-request-context';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthenticationGuard } from './guards/authentication.guard';
 import { NotificationService } from '../notification/services/notification.service';
+import { AuthController } from './controllers/auth.controller';
 
 @Module({
   providers: [
@@ -30,6 +31,7 @@ import { NotificationService } from '../notification/services/notification.servi
     }
 
   ],
-  imports: [TypeOrmModule.forFeature([User, RevokedToken]), RequestContextModule]
+  imports: [TypeOrmModule.forFeature([User, RevokedToken]), RequestContextModule],
+  controllers: [AuthController]
 })
 export class AuthModule { }
