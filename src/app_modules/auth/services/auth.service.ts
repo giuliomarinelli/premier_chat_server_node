@@ -140,6 +140,24 @@ export class AuthService {
 
     }
 
+    public async is2FaEnabled(userId: UUID): Promise<boolean> {
+
+        const userOpt: Optional<User> = await this.userService.findValidEnabledUserById(userId)
+        
+        if (userOpt.isEmpty())
+            throw new UnauthorizedException("Username and/or password are wrong")
+
+        const user: User = userOpt.get()
+
+        // Valutare di fare una query ad hoc e vedere se dà
+        // problemi di serializzazione come in Java o se funziona
+
+        return user._2FaStrategies.length > 0
+
+    }
+
+    
+
 
 
 }
