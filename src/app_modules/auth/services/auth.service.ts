@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../Models/sql-entities/user.entity';
 import { Repository } from 'typeorm';
@@ -12,6 +12,11 @@ import { JwtUtils } from './jwt-utils';
 import { JwtConfiguration, TotpConfiguration } from 'src/config/@types-config';
 import { UserPostInputDto } from '../Models/input-dto/user-post.input.dto';
 import { ConfirmRegistrationOutputDto } from '../Models/output-dto/confirm-registration.output.dto';
+import { ConfirmOutputDto } from '../Models/output-dto/confirm.output.dto';
+import { JwtPayload } from '../Models/interfaces/jwt-payload.interface';
+import { TokenType } from '../Models/enums/token-type.enum';
+import { Optional } from 'src/optional/optional';
+import { UUID } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -87,8 +92,23 @@ export class AuthService {
 
     }
 
+    public async activateUser(activationToken: string): Promise<ConfirmOutputDto> {
 
-    
+        const isInvalidOrExpired: boolean = await this.jwtUtils
+            .verifyToken(activationToken, TokenType.ACTIVATION_TOKEN, false)
+        const isInvalidIgnoreExpiration: boolean = await this.jwtUtils
+            .verifyToken(activationToken, TokenType.ACTIVATION_TOKEN, true)
+        if (isInvalidOrExpired && !isInvalidIgnoreExpiration)
+            throw new BadRequestException(`Time for account activation is over`)
+
+        try {
+            const userId: UUID = (await this.jwtUtils.extractPayload(activationToken, TokenType.ACTIVATION_TOKEN, false)).sub
+            userOpt: Optional<User> = await this.userService.findValidUserById()
+        } catch {
+            throw new NotFoundException("Resource not found")
+        }
+    }
+
 
 
 }
