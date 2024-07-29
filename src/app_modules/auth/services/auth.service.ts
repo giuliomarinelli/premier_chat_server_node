@@ -299,6 +299,32 @@ export class AuthService {
 
     }
 
+    public async disable2Fa(userId: UUID, strategy: _2FaStrategy): Promise<ConfirmOutputDto> {
+
+        const userOpt: Optional<User> = await this.userService.findValidEnabledUserById(userId)
+
+        if (userOpt.isEmpty())
+            throw new ForbiddenException("You don't have the permissions to access this resource")
+
+        const user: User = userOpt.get()
+
+        if (!user._2FaStrategies.includes(strategy))
+            throw new BadRequestException(
+                `Cannot proceed because 2 factors authentication via ${strategy.toLowerCase()} isn't enabled`
+            )
+        
+        const i: number =<number>user._2FaStrategies.indexOf(strategy)
+        user._2FaStrategies.splice(i, 1)
+        await this.userRepository.save(user)
+
+        return {
+            statusCode: HttpStatus.OK,
+            timestamp: new Date().toISOString(),
+            message: `2 factors authentication via ${strategy.toLowerCase()} has been successfully disabled`
+        }
+        
+    }
+
 
 
 }
