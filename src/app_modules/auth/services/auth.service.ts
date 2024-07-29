@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../Models/sql-entities/user.entity';
 import { Repository } from 'typeorm';
@@ -16,6 +16,7 @@ import { ConfirmOutputDto } from '../Models/output-dto/confirm.output.dto';
 import { TokenType } from '../Models/enums/token-type.enum';
 import { Optional } from 'src/optional/optional';
 import { UUID } from 'crypto';
+import { _2FaStrategy } from '../Models/enums/_2fa-strategy.enum';
 
 @Injectable()
 export class AuthService {
@@ -145,7 +146,7 @@ export class AuthService {
         const userOpt: Optional<User> = await this.userService.findValidEnabledUserById(userId)
         
         if (userOpt.isEmpty())
-            throw new UnauthorizedException("Username and/or password are wrong")
+            throw new ForbiddenException("You don't have the permissions to access this resource")
 
         const user: User = userOpt.get()
 
@@ -156,7 +157,7 @@ export class AuthService {
 
     }
 
-    
+    public async sendTotpToVerifyContact(userId: UUID, strategy: _2FaStrategy): Promise<>
 
 
 
