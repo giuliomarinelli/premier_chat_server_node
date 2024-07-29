@@ -172,7 +172,7 @@ export class AuthService {
         switch (strategy) {
 
             case _2FaStrategy.SMS: {
-               
+
                 if (!user.phoneNumber || !user.phoneNumber.trim())
                     throw new BadRequestException("You don't have provided a valid phone number")
 
@@ -213,6 +213,67 @@ export class AuthService {
                 return metadata
             }
         }
+
+    }
+
+    public async verifyContactBeforeGenerating2faTotp(preAuthorizationToken: string, contact: string, strategy: _2FaStrategy): Promise<TotpMetadataDto> {
+
+        let userId: UUID
+
+        try {
+            userId = (await this.jwtUtils.extractPayload(preAuthorizationToken, TokenType.PRE_AUTHORIZATION_TOKEN, false)).sub
+        } catch {
+            throw new ForbiddenException("You don't have the permissions to access this resource")
+        }
+
+        const userOpt: Optional<User> = await this.userService.findValidUserById(userId)
+
+        if (userOpt.isEmpty())
+            throw new ForbiddenException("You don't have the permissions to access this resource")
+
+        const user: User = userOpt.get()
+
+        if (!user._2FaStrategies.includes(strategy))
+            throw new BadRequestException(`${strategy.toLowerCase()} strategy for 2 factor authentication is not enabled for this user`)
+
+        const { TOTP, ...metadata } = this.securityUtils.generateTotp(user.totpSecret)
+
+        switch (strategy) {
+
+            case _2FaStrategy.EMAIL:
+
+                if (contact !== user.email) {
+                    await this.jwtUtils.revokeToken(preAuthorizationToken, TokenType.PRE_AUTHORIZATION_TOKEN)
+                    throw new UnauthorizedException("Email entered is wrong")
+                }
+                await this.notificationService.sendEmail<EmailTotpContext>(
+                    user.email,
+                    "Your code to access Premier Chat",
+                    {
+                        firstName: user.firstName,
+                        totp: TOTP,
+                        period: this.totpConfig.period
+                    },
+                    join(__dirname, "../../notification/email-templates/send-totp-for-2fa.hbs")
+
+                )
+                break
+            
+            case _2FaStrategy.SMS:
+
+                if (contact !== user.phoneNumber) {
+                    await this.jwtUtils.revokeToken(preAuthorizationToken, TokenType.PRE_AUTHORIZATION_TOKEN)
+                    throw new UnauthorizedException("Phone Number entered is wrong")
+                }
+                await this.notificationService.sendSms(
+                    user.phoneNumber,
+                    `Hello ${user.firstName}. Here is your code to access Premier Chat:\n\nTOTP\n\n` + 
+                    `It's valid ${this.totpConfig.period} seconds.`
+                )
+
+        }
+
+        return metadata
 
     }
 
