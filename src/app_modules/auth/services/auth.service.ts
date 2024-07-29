@@ -17,6 +17,9 @@ import { TokenType } from '../Models/enums/token-type.enum';
 import { Optional } from 'src/optional/optional';
 import { UUID } from 'crypto';
 import { _2FaStrategy } from '../Models/enums/_2fa-strategy.enum';
+import { TotpMetadataDto } from '../Models/output-dto/totp-metadata.dto.output';
+import { EmailTotpContext } from 'src/app_modules/notification/Models/interfaces/contexts/email-totp.context';
+import { join } from 'path';
 
 @Injectable()
 export class AuthService {
@@ -102,7 +105,7 @@ export class AuthService {
             throw new BadRequestException(`Time for account activation is over`)
 
         try {
-            
+
             const userId: UUID = (await this.jwtUtils.extractPayload(activationToken, TokenType.ACTIVATION_TOKEN, false)).sub
             const userOpt: Optional<User> = await this.userService.findValidUserById(userId)
             if (userOpt.isEmpty())
@@ -126,7 +129,7 @@ export class AuthService {
     public async usernameAndPasswordAuthentication(username: string, password: string): Promise<UUID> {
 
         const userOpt: Optional<User> = await this.userService.findValidNotEnabledUserByUsername(username)
-        
+
         if (userOpt.isEmpty())
             throw new UnauthorizedException("Username and/or password are wrong")
 
@@ -144,7 +147,7 @@ export class AuthService {
     public async is2FaEnabled(userId: UUID): Promise<boolean> {
 
         const userOpt: Optional<User> = await this.userService.findValidEnabledUserById(userId)
-        
+
         if (userOpt.isEmpty())
             throw new ForbiddenException("You don't have the permissions to access this resource")
 
@@ -157,7 +160,61 @@ export class AuthService {
 
     }
 
-    public async sendTotpToVerifyContact(userId: UUID, strategy: _2FaStrategy): Promise<>
+    public async sendTotpToVerifyContact(userId: UUID, strategy: _2FaStrategy): Promise<TotpMetadataDto> {
+
+        const userOpt: Optional<User> = await this.userService.findValidEnabledUserById(userId)
+
+        if (userOpt.isEmpty())
+            throw new ForbiddenException("You don't have the permissions to access this resource")
+
+        const user: User = userOpt.get()
+
+        switch (strategy) {
+
+            case _2FaStrategy.SMS: {
+               
+                if (!user.phoneNumber || !user.phoneNumber.trim())
+                    throw new BadRequestException("You don't have provided a valid phone number")
+
+                if (user.isPhoneNumberVerified)
+                    throw new BadRequestException("Your phone number has already been verified")
+
+                const { TOTP, ...metadata } = this.securityUtils.generateTotp(user.totpSecret)
+
+                await this.notificationService.sendSms(
+                    user.phoneNumber, `Hello ${user.firstName}. Here is your code to verify`
+                + ` your phone number:\n\n${TOTP}\n\n It's valid ${this.totpConfig.period} seconds.`
+                )
+
+                return metadata
+            }
+
+            case _2FaStrategy.EMAIL: {
+
+                if (!user.email || !user.email.trim())
+                    throw new BadRequestException("You don't have provided a valid phone number")
+
+                if (user.isEmailVerified)
+                    throw new BadRequestException("Your email has already been verified")
+
+                const { TOTP, ...metadata } = this.securityUtils.generateTotp(user.totpSecret)
+
+                await this.notificationService.sendEmail<EmailTotpContext>(
+                    user.email,
+                    "Your Premier Chat verification code",
+                    {
+                        firstName: user.firstName,
+                        totp: TOTP,
+                        period: this.totpConfig.period
+                    },
+                    join(__dirname, "../../notification/email-templates/email-verification.hbs")
+                )
+
+                return metadata
+            }
+        }
+
+    }
 
 
 
