@@ -3,13 +3,28 @@ import { UserPostInputDto } from '../Models/input-dto/user-post.input.dto';
 import { ConfirmRegistrationOutputDto } from '../Models/output-dto/confirm-registration.output.dto';
 import { AuthService } from '../services/auth.service';
 import { ConfirmOutputDto } from '../Models/output-dto/confirm.output.dto';
+import { ConfigService } from '@nestjs/config';
+import { JwtUtils } from '../services/jwt-utils';
+import { UserService } from '../services/user.service';
+import { SecurityUtils } from '../services/security-utils';
+import { TotpConfiguration } from 'src/config/@types-config';
 
 @Controller('auth')
 export class AuthController {
 
+    // Per il momento ignoro la security strategy implementando esclusivamente l'autenticazione basata sui cookie
+
+    private readonly totpConfig: TotpConfiguration
+
     constructor(
-        private readonly authService: AuthService
-    ) { }
+        private readonly configService: ConfigService,
+        private readonly authService: AuthService,
+        private readonly jwtUtils: JwtUtils,
+        private readonly userService: UserService,
+        private readonly securityUtils: SecurityUtils,
+    ) { 
+        this.totpConfig = configService.get<TotpConfiguration>("TotpConfig")
+    }
 
     @Post("/register")
     @UsePipes(new ValidationPipe({ transform: true }))
@@ -26,5 +41,8 @@ export class AuthController {
         return await this.authService.activateUser(activationToken)
 
     }
+
+    @Post("/login")
+
 
 }

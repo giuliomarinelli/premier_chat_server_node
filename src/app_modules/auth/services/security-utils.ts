@@ -98,7 +98,7 @@ export class SecurityUtils {
 
     }
 
-    public generateAuthenticationCookieOptions(session: boolean): CookieOptions {
+    public generateAuthenticationCookieOptions(session: boolean, customMaxAge?: number): CookieOptions {
 
         const { domain, httpOnly, path, sameSite, secure } = this.securityCookieConfig
 
@@ -108,7 +108,7 @@ export class SecurityUtils {
             path,
             sameSite,
             secure,
-            maxAge: Date.now() + this.expiration
+            maxAge: customMaxAge || Date.now() + this.expiration
         }
 
         if (!session) return opt
