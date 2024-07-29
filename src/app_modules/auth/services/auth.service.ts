@@ -37,6 +37,7 @@ export class AuthService {
     public async register(userPostInputDto: UserPostInputDto): Promise<ConfirmRegistrationOutputDto> {
 
         const {
+
             firstName,
             lastName,
             dateOfBirth,
@@ -46,6 +47,7 @@ export class AuthService {
             password,
             phoneNumberPrefix,
             phoneNumberBody
+
         } = userPostInputDto
 
         if (phoneNumberPrefix && !phoneNumberBody)
@@ -73,6 +75,7 @@ export class AuthService {
         } catch (e) {
             // Gestire gli errori in cui è violata l'integrità dei dati
             console.error(e)
+            throw e
         }
 
         return {
@@ -83,6 +86,9 @@ export class AuthService {
         }
 
     }
+
+
+    
 
 
 }
