@@ -359,7 +359,53 @@ export class AuthService {
             timestamp: new Date().toISOString(),
             message: `2 factors authentication via ${strategy.toLowerCase()} has been successfully enabled`
         }
-        
+
+    }
+
+    public async updateEmail(newEmail: string, userId: UUID): Promise<ConfirmOutputDto> {
+
+        const userOpt: Optional<User> = await this.userService.findValidEnabledUserById(userId)
+
+        if (userOpt.isEmpty())
+            throw new ForbiddenException("You don't have the permissions to access this resource")
+
+        const user: User = userOpt.get()
+
+        user.previousEmail = user.email
+        user.email = newEmail
+        user.isEmailVerified = false
+
+        await this.userRepository.save(user)
+
+        return {
+            statusCode: HttpStatus.OK,
+            timestamp: new Date().toISOString(),
+            message: "Your email has been successfully updated. You must verify your new email before you can use it in the app."
+        }
+
+    }
+
+    public async updatePhoneNumber(newPhoneNumber: string, userId: UUID): Promise<ConfirmOutputDto> {
+
+        const userOpt: Optional<User> = await this.userService.findValidEnabledUserById(userId)
+
+        if (userOpt.isEmpty())
+            throw new ForbiddenException("You don't have the permissions to access this resource")
+
+        const user: User = userOpt.get()
+
+        user.previousPhoneNumber = user.phoneNumber
+        user.phoneNumber = newPhoneNumber
+        user.isPhoneNumberVerified = false
+
+        await this.userRepository.save(user)
+
+        return {
+            statusCode: HttpStatus.OK,
+            timestamp: new Date().toISOString(),
+            message: "Your phone number has been successfully updated. You must verify your new phone number before you can use it in the app."
+        }
+
     }
 
 
