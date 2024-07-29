@@ -1,3 +1,5 @@
+import { TokenPair } from './../Models/interfaces/token-pair.interface';
+import { TokenPairType } from './../Models/enums/token-pair-type.enum';
 import { BadRequestException, ForbiddenException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../Models/sql-entities/user.entity';
@@ -258,7 +260,7 @@ export class AuthService {
 
                 )
                 break
-            
+
             case _2FaStrategy.SMS:
 
                 if (contact !== user.phoneNumber) {
@@ -267,13 +269,33 @@ export class AuthService {
                 }
                 await this.notificationService.sendSms(
                     user.phoneNumber,
-                    `Hello ${user.firstName}. Here is your code to access Premier Chat:\n\nTOTP\n\n` + 
+                    `Hello ${user.firstName}. Here is your code to access Premier Chat:\n\nTOTP\n\n` +
                     `It's valid ${this.totpConfig.period} seconds.`
                 )
 
         }
 
         return metadata
+
+    }
+
+    public async performAuthentication(userId: UUID, restore: boolean): Promise<Map<TokenPairType, TokenPair>> {
+
+        const tokensMap = new Map<TokenPairType, TokenPair>()
+
+        tokensMap.set(TokenPairType.HTTP, {
+            accessToken: await this.jwtUtils.generateToken(userId, TokenType.ACCESS_TOKEN, restore),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore),
+            type: TokenPairType.HTTP
+        })
+
+        tokensMap.set(TokenPairType.HTTP, {
+            accessToken: await this.jwtUtils.generateToken(userId, TokenType.WS_ACCESS_TOKEN, restore),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore),
+            type: TokenPairType.WS
+        })
+
+        return tokensMap
 
     }
 
