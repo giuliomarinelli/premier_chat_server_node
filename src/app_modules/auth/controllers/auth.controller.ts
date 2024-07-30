@@ -49,7 +49,6 @@ export class AuthController {
         this.tokenNames.set(TokenType.WS_REFRESH_TOKEN, "__access_token")
         this.tokenNames.set(TokenType.PRE_AUTHORIZATION_TOKEN, "__pre_authorization_token")
         this.isAuthCookieOpt = this.configService.get<SecurityCookieConfiguration>("IsAuthCookie")
-        console.log('prova')
     }
 
     @Post("/register")
