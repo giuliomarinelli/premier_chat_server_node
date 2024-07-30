@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, ForbiddenException, Get, HttpStatus, Param, Req, Res } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, HttpCode, HttpStatus, Param, Post, Req, Res, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtUtils } from '../services/jwt-utils';
@@ -14,6 +14,9 @@ import { Optional } from 'src/optional/optional';
 import { ConfirmOutputWithObscuredContactAndTotpMetadata } from '../Models/output-dto/confirm-login.output.dto';
 import { TotpMetadataDto } from '../Models/output-dto/totp-metadata.dto.output';
 import { TokenPair } from '../Models/interfaces/token-pair.interface';
+import { TotpInputDto } from '../Models/input-dto/totp.input.dto';
+import { ConfirmOutputDto } from '../Models/output-dto/confirm.output.dto';
+
 
 @Controller('account')
 export class AccountController {
@@ -103,6 +106,29 @@ export class AccountController {
 
         return body
 
+    }
+
+    @HttpCode(HttpStatus.OK)
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @Post("/contact-verification/:strategy/verify-totp")
+    public async validateNewContact(@Body() totpInputDto: TotpInputDto, @Param("strategy") strategy: string, @Req() req: FastifyRequest): Promise<ConfirmOutputDto> {
+
+        let verificationToken: string
+
+        const _strategy: _2FaStrategy = this.securityUtils.stringTo_2FaStrategy(strategy)
+
+        switch (_strategy) {
+
+            case _2FaStrategy.SMS:
+                verificationToken = req.cookies[this.tokenNames.get(TokenType.PHONE_NUMBER_VERIFICATION_TOKEN)]
+                break
+            
+            case _2FaStrategy.EMAIL:
+                verificationToken = req.cookies[this.tokenNames.get(TokenType.EMAIL_VERIFICATION_TOKEN)]
+
+        }
+
+        return await this.authService.validateNewContact(totpInputDto.totp, verificationToken, _strategy)
 
     }
 
