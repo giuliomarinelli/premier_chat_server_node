@@ -22,6 +22,7 @@ import { _2FaStrategy } from '../Models/enums/_2fa-strategy.enum';
 import { TotpMetadataDto } from '../Models/output-dto/totp-metadata.dto.output';
 import { EmailTotpContext } from 'src/app_modules/notification/Models/interfaces/contexts/email-totp.context';
 import { join } from 'path';
+import { v4 as uuidv4 } from "uuid"
 
 @Injectable()
 export class AuthService {
@@ -405,6 +406,12 @@ export class AuthService {
             timestamp: new Date().toISOString(),
             message: "Your phone number has been successfully updated. You must verify your new phone number before you can use it in the app."
         }
+
+    }
+
+    public generateIsAuthCookieValue(): string {
+
+        return Buffer.from(JSON.stringify({ isAuthenticated: true, timestamp: new Date().toISOString(), SID: uuidv4() }), "utf-8").toString("base64")
 
     }
 

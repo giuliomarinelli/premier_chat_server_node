@@ -4,6 +4,8 @@ import { SnakeNamingStrategy } from "typeorm-naming-strategies";
 import { MailerOptions } from "@nestjs-modules/mailer";
 import { join } from "path";
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { FastifyCookieOptions } from "@fastify/cookie";
+import { CookieOptions } from "express";
 
 export enum ConfigKey {
     App = 'App',
@@ -12,7 +14,8 @@ export enum ConfigKey {
     SecurityCookie = 'SecurityCookie',
     Email = "Email",
     Sms = "Sms",
-    Totp = "Totp"
+    Totp = "Totp",
+    IsAuthCookie = "IsAuthCookie"
 }
 
 export enum Environment {
@@ -134,6 +137,17 @@ const SecurityCookieConfig = registerAs(
     })
 )
 
+const IsAuthCookieConfig = registerAs(
+    ConfigKey.IsAuthCookie, (): SecurityCookieConfiguration =>({
+        path: process.env.COOKIE_SECURITY_PATH,
+        httpOnly: false,
+        sameSite: <"strict" | "lax" | "none">process.env.COOKIE_SECURITY_SAME_SITE,
+        secure: !!process.env.COOKIE_SECURITY_SECURE,
+        domain: process.env.COOKIE_SECURITY_DOMAIN,
+        secret: process.env.COOKIE_SECURITY_SECRET
+    })
+)
+
 const TotpConfig = registerAs(
     ConfigKey.Totp, (): TotpConfiguration => ({
         bytes: Number(process.env.TOTP_CONFIG_BYTES),
@@ -142,4 +156,4 @@ const TotpConfig = registerAs(
     })
 )
 
-export default [AppConfig, DataConfig, JwtConfig, EmailConfig, SmsConfig, SecurityCookieConfig, TotpConfig]
+export default [AppConfig, DataConfig, JwtConfig, EmailConfig, SmsConfig, SecurityCookieConfig, IsAuthCookieConfig, TotpConfig]

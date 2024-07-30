@@ -99,9 +99,11 @@ export class SecurityUtils {
 
     }
 
-    public generateAuthenticationCookieOptions(session: boolean, customMaxAge?: number): CookieOptions {
+    public generateAuthenticationCookieOptions(session: boolean, securityCookieConfig?: SecurityCookieConfiguration, customMaxAge?: number): CookieOptions {
 
-        const { domain, httpOnly, path, sameSite, secure } = this.securityCookieConfig
+        const _securityCookieConfig: SecurityCookieConfiguration = securityCookieConfig || this.securityCookieConfig
+        
+        const { domain, httpOnly, path, sameSite, secure } = _securityCookieConfig
 
         const opt: CookieOptions = {
             domain,
