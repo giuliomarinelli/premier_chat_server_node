@@ -14,6 +14,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthenticationGuard } from './guards/authentication.guard';
 import { NotificationService } from '../notification/services/notification.service';
 import { AuthController } from './controllers/auth.controller';
+import { AccountController } from './controllers/account.controller';
 
 @Module({
   providers: [
@@ -25,6 +26,7 @@ import { AuthController } from './controllers/auth.controller';
     RevokedTokenService,
     JwtService,
     NotificationService,
+    Object,
     {
       provide: APP_GUARD,
       useClass: AuthenticationGuard
@@ -32,6 +34,6 @@ import { AuthController } from './controllers/auth.controller';
 
   ],
   imports: [TypeOrmModule.forFeature([User, RevokedToken]), RequestContextModule],
-  controllers: [AuthController]
+  controllers: [AuthController, AccountController]
 })
 export class AuthModule { }
