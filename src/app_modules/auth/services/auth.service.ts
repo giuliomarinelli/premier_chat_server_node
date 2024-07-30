@@ -22,6 +22,7 @@ import { _2FaStrategy } from '../Models/enums/_2fa-strategy.enum';
 import { TotpMetadataDto } from '../Models/output-dto/totp-metadata.dto.output';
 import { EmailTotpContext } from 'src/app_modules/notification/Models/interfaces/contexts/email-totp.context';
 import { join } from 'path';
+import { v4 as uuidv4 } from "uuid"
 
 @Injectable()
 export class AuthService {
@@ -404,6 +405,65 @@ export class AuthService {
             statusCode: HttpStatus.OK,
             timestamp: new Date().toISOString(),
             message: "Your phone number has been successfully updated. You must verify your new phone number before you can use it in the app."
+        }
+
+    }
+
+    public generateIsAuthCookieValue(): string {
+
+        return Buffer.from(JSON.stringify({ isAuthenticated: true, timestamp: new Date().toISOString(), SID: uuidv4() }), "utf-8").toString("base64")
+
+    }
+
+    public async validateNewContact(totp: string, verificationToken: string, strategy: _2FaStrategy): Promise<ConfirmOutputDto> {
+
+        let message: string 
+
+        switch (strategy) {
+
+            case _2FaStrategy.SMS: {
+
+                const userId: UUID = (await this.jwtUtils.extractPayload(verificationToken, TokenType.PHONE_NUMBER_VERIFICATION_TOKEN, false)).sub
+                const userOpt: Optional<User> = await this.userService.findValidEnabledUserById(userId)
+                if (userOpt.isEmpty()) throw new ForbiddenException("You don't have the permissions to access this resource")
+                const user: User = userOpt.get()
+
+                if (!this.securityUtils.verifyTotp(totp, user.totpSecret)) {
+
+                    await this.jwtUtils.revokeToken(verificationToken, TokenType.PHONE_NUMBER_VERIFICATION_TOKEN)
+                    throw new BadRequestException("Wrong verification code")
+
+                }
+                user.isPhoneNumberVerified = true
+                await this.userRepository.save(user)
+                message = "Phone number has been verified successfully"
+
+            }
+
+            case _2FaStrategy.EMAIL: {
+
+                const userId: UUID = (await this.jwtUtils.extractPayload(verificationToken, TokenType.EMAIL_VERIFICATION_TOKEN, false)).sub
+                const userOpt: Optional<User> = await this.userService.findValidEnabledUserById(userId)
+                if (userOpt.isEmpty()) throw new ForbiddenException("You don't have the permissions to access this resource")
+                const user: User = userOpt.get()
+
+                if (!this.securityUtils.verifyTotp(totp, user.totpSecret)) {
+
+                    await this.jwtUtils.revokeToken(verificationToken, TokenType.EMAIL_VERIFICATION_TOKEN)
+                    throw new BadRequestException("Wrong verification code")
+
+                }
+                user.isEmailVerified = true
+                await this.userRepository.save(user)
+                message = "Email has been verified successfully"
+
+            }
+        }
+
+        return {
+            statusCode: HttpStatus.OK,
+            timestamp: new Date().toISOString(),
+            message
         }
 
     }

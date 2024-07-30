@@ -1,4 +1,5 @@
 import { ConfirmOutputDto } from "./confirm.output.dto"
+import { TotpMetadataDto } from "./totp-metadata.dto.output"
 
 type ObscuredContactsWrapper = {
 
@@ -8,3 +9,5 @@ type ObscuredContactsWrapper = {
 }
 
 export type ConfirmLoginOutputDto = ConfirmOutputDto & ObscuredContactsWrapper
+
+export type ConfirmOutputWithObscuredContactAndTotpMetadata = ConfirmOutputDto & ObscuredContactsWrapper & TotpMetadataDto

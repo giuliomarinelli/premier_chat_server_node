@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtUtils } from '../services/jwt-utils';
 import { UserService } from '../services/user.service';
 import { SecurityUtils } from '../services/security-utils';
-import { TotpConfiguration } from 'src/config/@types-config';
+import { SecurityCookieConfiguration, TotpConfiguration } from 'src/config/@types-config';
 import { FastifyReply } from 'fastify/types/reply';
 import { LoginDto } from '../Models/input-dto/login.dto';
 import { ConfirmLoginOutputDto } from '../Models/output-dto/confirm-login.output.dto';
@@ -40,6 +40,7 @@ export class AuthController {
         private readonly jwtUtils: JwtUtils,
         private readonly userService: UserService,
         private readonly securityUtils: SecurityUtils,
+        private readonly isAuthCookieOpt: SecurityCookieConfiguration
     ) {
         this.totpConfig = this.configService.get<TotpConfiguration>("TotpConfig")
         this.tokenNames.set(TokenType.ACCESS_TOKEN, "__access_token")
@@ -47,6 +48,7 @@ export class AuthController {
         this.tokenNames.set(TokenType.WS_ACCESS_TOKEN, "__ws_access_token")
         this.tokenNames.set(TokenType.WS_REFRESH_TOKEN, "__access_token")
         this.tokenNames.set(TokenType.PRE_AUTHORIZATION_TOKEN, "__pre_authorization_token")
+        this.isAuthCookieOpt = this.configService.get<SecurityCookieConfiguration>("IsAuthCookie")
     }
 
     @Post("/register")
@@ -104,6 +106,11 @@ export class AuthController {
                 authenticationTokens.get(TokenPairType.WS).refreshToken,
                 this.securityUtils.generateAuthenticationCookieOptions(!restore)
             )
+            res.setCookie(
+                "__is_auth", 
+                this.authService.generateIsAuthCookieValue(),
+                this.securityUtils.generateAuthenticationCookieOptions(!restore, this.isAuthCookieOpt)
+            )   
 
             return {
                 statusCode: HttpStatus.OK,
@@ -150,6 +157,7 @@ export class AuthController {
             res.clearCookie[this.tokenNames.get(key)]
 
         }
+        res.clearCookie("__is_auth")
 
         return {
             statusCode: HttpStatus.OK,
@@ -246,6 +254,11 @@ export class AuthController {
             authenticationTokens.get(TokenPairType.WS).refreshToken,
             this.securityUtils.generateAuthenticationCookieOptions(!restore)
         )
+        res.setCookie(
+            "__is_auth", 
+            this.authService.generateIsAuthCookieValue(),
+            this.securityUtils.generateAuthenticationCookieOptions(!restore, this.isAuthCookieOpt)
+        )   
 
         return {
             statusCode: HttpStatus.OK,
