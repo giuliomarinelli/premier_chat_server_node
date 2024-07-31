@@ -9,6 +9,7 @@ import { MongooseModule, MongooseModuleFactoryOptions } from '@nestjs/mongoose';
 import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
 import { RequestContextModule } from 'nestjs-request-context';
 import { NotificationModule } from './app_modules/notification/notification.module';
+import { ConversationModule } from './app_modules/conversation/conversation.module';
 
 
 @Module({
@@ -35,7 +36,8 @@ import { NotificationModule } from './app_modules/notification/notification.modu
       inject: [ConfigService]
     }),
     RequestContextModule,
-    NotificationModule
+    NotificationModule,
+    ConversationModule
   ],
   controllers: [AppController],
   providers: [
