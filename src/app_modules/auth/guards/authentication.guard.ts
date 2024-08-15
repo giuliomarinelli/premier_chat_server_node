@@ -5,9 +5,8 @@ import { JwtUtils } from '../services/jwt-utils';
 import { TokenPair } from '../Models/interfaces/token-pair.interface';
 import { TokenType } from '../Models/enums/token-type.enum';
 import { TokenPairType } from '../Models/enums/token-pair-type.enum';
-import { JwtPayload } from 'jsonwebtoken';
-import { UUID } from 'crypto';
 import { UserService } from '../services/user.service';
+import { JwtPayload } from '../Models/interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthenticationGuard implements CanActivate {
@@ -49,8 +48,8 @@ export class AuthenticationGuard implements CanActivate {
 
     const payload: JwtPayload = await this.jwtUtils.extractPayload(tokenPair.refreshToken, TokenType.REFRESH_TOKEN, false)
 
-    const userId = <UUID>payload.sub
-    const restore = <boolean>payload.res
+    const userId = payload.sub
+    const restore = payload.res
 
     res.setCookie(
       "__access_token",

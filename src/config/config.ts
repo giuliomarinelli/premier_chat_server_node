@@ -4,8 +4,6 @@ import { SnakeNamingStrategy } from "typeorm-naming-strategies";
 import { MailerOptions } from "@nestjs-modules/mailer";
 import { join } from "path";
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-import { FastifyCookieOptions } from "@fastify/cookie";
-import { CookieOptions } from "express";
 
 export enum ConfigKey {
     App = 'App',

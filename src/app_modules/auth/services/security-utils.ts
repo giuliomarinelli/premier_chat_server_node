@@ -19,8 +19,8 @@ export class SecurityUtils {
 
     constructor(private readonly configService: ConfigService) {
         this.totpConfig = configService.get<TotpConfiguration>("Totp")
-        this.securityCookieConfig = configService.get<SecurityCookieConfiguration>("SecurityCookie"),
-            this.expiration = configService.get<number>("Jwt.refreshToken.expiresInMs")
+        this.securityCookieConfig = configService.get<SecurityCookieConfiguration>("SecurityCookie")
+        this.expiration = configService.get<number>("Jwt.refreshToken.expiresInMs")
     }
 
     public generateSecret(bytes: number, encode: Encode): string {
@@ -102,7 +102,7 @@ export class SecurityUtils {
     public generateAuthenticationCookieOptions(session: boolean, securityCookieConfig?: SecurityCookieConfiguration, customMaxAge?: number): CookieOptions {
 
         const _securityCookieConfig: SecurityCookieConfiguration = securityCookieConfig || this.securityCookieConfig
-        
+
         const { domain, httpOnly, path, sameSite, secure } = _securityCookieConfig
 
         const opt: CookieOptions = {
@@ -120,7 +120,7 @@ export class SecurityUtils {
 
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { maxAge, ...optSession } = opt
-            return optSession          
+            return optSession
 
         }
 

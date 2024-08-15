@@ -1,5 +1,5 @@
 import { UUID } from "crypto";
-import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity({ name: "revoked_tokens" })
 export class RevokedToken {
@@ -8,10 +8,9 @@ export class RevokedToken {
     id: UUID
 
     @Column({ type: "uuid", unique: true, nullable: true, default: null })
-    jti: UUID
+    jti: UUID | null
 
-    @Index()
-    @Column({ type: "text" })
+    @Column({ type: "text", unique: true })
     token: string
 
     constructor(token: string, jti?: UUID) {

@@ -100,7 +100,7 @@ export class User {
         this.email = email
         this.hashedPassword = hashedPassword
         this.totpSecret = totpSecret
-        this.phoneNumber = phoneNumberPrefix && phoneNumberBody ? phoneNumberPrefix && phoneNumberBody : null
+        this.phoneNumber = phoneNumberPrefix && phoneNumberBody ? phoneNumberPrefix + phoneNumberBody : null
         this.phoneNumberPrefixLength = phoneNumberPrefix ? phoneNumberPrefix.length : 0
         this.mustActivateInto = Date.now() + msForActivation
         this.createdAt = this.updatedAt = Date.now()
