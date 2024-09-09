@@ -1,6 +1,6 @@
 import { SecurityCookieConfiguration, TotpConfiguration } from '../../../config/@types-config';
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { randomBytes } from 'crypto'
+import { BinaryToTextEncoding, createHash, randomBytes } from 'crypto'
 import { Encode } from '../Models/enums/encode.enum';
 import speakeasy from 'speakeasy'
 import { ConfigService } from '@nestjs/config';
@@ -131,6 +131,14 @@ export class SecurityUtils {
         const _enum = (Object.values(_2FaStrategy) as string[]).includes(value) ? _2FaStrategy[value as keyof typeof _2FaStrategy] : undefined;
         if (!_enum) throw new BadRequestException("Invalid 'strategy' path param")
         return _enum
+    }
+
+    public generateSha256Hash(data: string, endcode: BinaryToTextEncoding = "hex"): string {
+
+        const hash = createHash('sha256');
+        hash.update(data);
+        return hash.digest(endcode);
+
     }
 
 }
