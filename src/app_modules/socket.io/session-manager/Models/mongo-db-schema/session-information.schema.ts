@@ -1,6 +1,5 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
-import { Document } from 'mongoose'
-import { ISessionInformations } from '../interfaces/session-informations.interface'
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { ISessionInformations } from "../interfaces/session-informations.interface";
 
 @Schema()
 export class SessionInformations implements ISessionInformations {
