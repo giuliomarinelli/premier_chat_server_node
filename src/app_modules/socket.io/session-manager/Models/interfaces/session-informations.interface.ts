@@ -1,7 +1,9 @@
-export interface SessionInformations {
-    platform: string;
-    browserName: string;
-    browserVersion: string;
-    language: string;
-    timezone: string;
+export interface ISessionInformations {
+
+    platform: string
+    browserName: string
+    browserVersion: string
+    language: string
+    timezone: string
+
 }
