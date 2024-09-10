@@ -26,6 +26,7 @@ import { TotpInputDto } from '../Models/input-dto/totp.input.dto';
 import { JwtPayload } from '../Models/interfaces/jwt-payload.interface';
 
 
+
 @Controller('auth')
 export class AuthController {
 
@@ -71,7 +72,7 @@ export class AuthController {
     @Post("/login")
     @HttpCode(HttpStatus.OK)
     @UsePipes(new ValidationPipe({ transform: true }))
-    public async login(@Body() loginDto: LoginDto, @Res() res: FastifyReply): Promise<ConfirmLoginOutputDto> {
+    public async login(@Body() loginDto: LoginDto, @Req() req: FastifyRequest, @Res() res: FastifyReply): Promise<ConfirmLoginOutputDto> {
 
         const { username, password, restore, fingerprintDto } = loginDto
         const userId: UUID = await this.authService.usernameAndPasswordAuthentication(username, password)
@@ -107,10 +108,10 @@ export class AuthController {
                 this.securityUtils.generateAuthenticationCookieOptions(!restore)
             )
             res.setCookie(
-                "__is_auth", 
+                "__is_auth",
                 this.authService.generateIsAuthCookieValue(),
                 this.securityUtils.generateAuthenticationCookieOptions(!restore, this.isAuthCookieOpt)
-            )   
+            )
 
             return {
                 statusCode: HttpStatus.OK,
@@ -208,7 +209,7 @@ export class AuthController {
     @Post("/2-factors-authentication/totp/verify")
     @HttpCode(HttpStatus.OK)
     @UsePipes(new ValidationPipe({ transform: true }))
-    public async verifyTotpFor2Fa(@Body() totpInputDto: TotpInputDto, @Req() req: FastifyRequest, @Res()  res: FastifyReply): Promise<ConfirmOutputDto> {
+    public async verifyTotpFor2Fa(@Body() totpInputDto: TotpInputDto, @Req() req: FastifyRequest, @Res() res: FastifyReply): Promise<ConfirmOutputDto> {
 
         const preAuthorizationToken = req.cookies[this.tokenNames.get(TokenType.PRE_AUTHORIZATION_TOKEN)]
 
@@ -232,7 +233,7 @@ export class AuthController {
 
         }
 
-        const fingerprint: string = await this.jwtUtils.getFingerprintFromToken(preAuthorizationToken, TokenType.PRE_AUTHORIZATION_TOKEN) 
+        const fingerprint: string = await this.jwtUtils.getFingerprintFromToken(preAuthorizationToken, TokenType.PRE_AUTHORIZATION_TOKEN)
         const authenticationTokens: Map<TokenPairType, TokenPair> = await this.authService.performAuthentication(userId, restore, fingerprint)
 
         res.setCookie(
@@ -256,10 +257,10 @@ export class AuthController {
             this.securityUtils.generateAuthenticationCookieOptions(!restore)
         )
         res.setCookie(
-            "__is_auth", 
+            "__is_auth",
             this.authService.generateIsAuthCookieValue(),
             this.securityUtils.generateAuthenticationCookieOptions(!restore, this.isAuthCookieOpt)
-        )   
+        )
 
         return {
             statusCode: HttpStatus.OK,

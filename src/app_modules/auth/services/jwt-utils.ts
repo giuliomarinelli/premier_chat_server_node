@@ -13,6 +13,7 @@ import { FastifyRequest } from 'fastify';
 import { RevokedToken } from '../Models/sql-entities/revoked-token.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { GenerateTokenOptions } from '../Models/interfaces/generate-token-options.interface';
 
 @Injectable()
 export class JwtUtils {
@@ -86,11 +87,22 @@ export class JwtUtils {
     }
 
 
-    public async generateToken(userId: UUID, type: TokenType, restore: boolean, fingerprint: string = undefined): Promise<string> {
+    public async generateToken(
+        userId: UUID,
+        type: TokenType,
+        restore: boolean,
+        options: GenerateTokenOptions | undefined = undefined
+    ): Promise<string> {
+
+        const { fingerprint, ip } = options || {}
 
         if ((type === TokenType.REFRESH_TOKEN || type === TokenType.WS_REFRESH_TOKEN
             || type === TokenType.PRE_AUTHORIZATION_TOKEN) && !fingerprint)
             throw new BadRequestException("No provided fingerprint")
+
+        if ((type === TokenType.ACCESS_TOKEN || type === TokenType.WS_ACCESS_TOKEN || type === TokenType.REFRESH_TOKEN
+            || type === TokenType.WS_REFRESH_TOKEN || type === TokenType.PRE_AUTHORIZATION_TOKEN) && !ip)
+            throw new BadRequestException("Unknown ip address")
 
         const jwtConfig = this.getJwtConfigurationFromTokenType(type)
 
@@ -102,6 +114,7 @@ export class JwtUtils {
                 typ: type,
                 res: restore,
                 fgp: fingerprint,
+                ip,
                 iat: Date.now(),
                 exp: Date.now() + jwtConfig.expiresInMs
             },

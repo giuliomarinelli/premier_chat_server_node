@@ -288,11 +288,11 @@ export class AuthService {
         let fingerprint: string
 
         if (typeof fingerprintDtoOrFingerprint === "object") {
-            
+
             fingerprint = this.generateFingerprintFromFingerprintDto(fingerprintDtoOrFingerprint)
 
         } else if (fingerprintDtoOrFingerprint === "string") {
-            
+
             fingerprint = fingerprintDtoOrFingerprint
 
         }
@@ -301,13 +301,13 @@ export class AuthService {
 
         tokensMap.set(TokenPairType.HTTP, {
             accessToken: await this.jwtUtils.generateToken(userId, TokenType.ACCESS_TOKEN, restore),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, fingerprint),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, { fingerprint }),
             type: TokenPairType.HTTP
         })
 
         tokensMap.set(TokenPairType.HTTP, {
             accessToken: await this.jwtUtils.generateToken(userId, TokenType.WS_ACCESS_TOKEN, restore),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, fingerprint),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, { fingerprint }),
             type: TokenPairType.WS
         })
 
@@ -318,7 +318,7 @@ export class AuthService {
     public async performTotp2FaPreAuthorization(userId: UUID, restore: boolean, fingerprintDto: FingerprintDto): Promise<string> {
 
         const fingerprint: string = this.generateFingerprintFromFingerprintDto(fingerprintDto)
-        return await this.jwtUtils.generateToken(userId, TokenType.PRE_AUTHORIZATION_TOKEN, restore, fingerprint)
+        return await this.jwtUtils.generateToken(userId, TokenType.PRE_AUTHORIZATION_TOKEN, restore, { fingerprint })
 
     }
 

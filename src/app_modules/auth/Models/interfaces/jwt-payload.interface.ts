@@ -8,9 +8,10 @@ export interface JwtPayload {
     jti: UUID
     typ: TokenType
     fgp?: string
+    ip?: string
     res: boolean
     iat: number
     exp: number
-    
+
     
 }
