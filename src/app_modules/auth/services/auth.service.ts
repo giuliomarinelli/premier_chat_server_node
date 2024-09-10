@@ -27,6 +27,7 @@ import { v4 as uuidv4 } from "uuid"
 import { FingerprintDto } from '../Models/input-dto/fingerprint.dto/fingerprint.dto';
 import { FastifyRequest } from 'fastify';
 import { IpService } from './ip.service';
+import { SessionService } from "src/app_modules/socket.io/session-manager/services/session.service";
 
 @Injectable()
 export class AuthService {
@@ -43,7 +44,8 @@ export class AuthService {
         private readonly configService: ConfigService,
         private readonly securityUtils: SecurityUtils,
         private readonly jwtUtils: JwtUtils,
-        private readonly ipService: IpService
+        private readonly ipService: IpService,
+        private readonly sessionService: SessionService
     ) {
         this.authorizationStrategy = this.configService.get<AuthorizationStrategy>("App.securityStrategy")
         this.activationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.activationToken")

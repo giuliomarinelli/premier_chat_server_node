@@ -17,6 +17,7 @@ import { AuthController } from './controllers/auth.controller';
 import { AccountController } from './controllers/account.controller';
 import { FingerprintService } from './services/fingerprint.service';
 import { IpService } from './services/ip.service';
+import { SessionService } from '../socket.io/session-manager/services/session.service';
 
 @Module({
   providers: [
@@ -29,6 +30,7 @@ import { IpService } from './services/ip.service';
     JwtService,
     NotificationService,
     Object,
+    SessionService,
     {
       provide: APP_GUARD,
       useClass: AuthenticationGuard
