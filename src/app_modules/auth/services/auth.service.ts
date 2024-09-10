@@ -23,6 +23,7 @@ import { TotpMetadataDto } from '../Models/output-dto/totp-metadata.dto.output';
 import { EmailTotpContext } from 'src/app_modules/notification/Models/interfaces/contexts/email-totp.context';
 import { join } from 'path';
 import { v4 as uuidv4 } from "uuid"
+import { FingerprintDto } from '../Models/input-dto/fingerprint.dto/fingerprint.dto';
 
 @Injectable()
 export class AuthService {
@@ -280,19 +281,21 @@ export class AuthService {
 
     }
 
-    public async performAuthentication(userId: UUID, restore: boolean): Promise<Map<TokenPairType, TokenPair>> {
+    public async performAuthentication(userId: UUID, restore: boolean, fingerprintDto: FingerprintDto): Promise<Map<TokenPairType, TokenPair>> {
+
+        if (!fingerprintDto) throw new BadRequestException()
 
         const tokensMap = new Map<TokenPairType, TokenPair>()
 
         tokensMap.set(TokenPairType.HTTP, {
             accessToken: await this.jwtUtils.generateToken(userId, TokenType.ACCESS_TOKEN, restore),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, ),
             type: TokenPairType.HTTP
         })
 
         tokensMap.set(TokenPairType.HTTP, {
             accessToken: await this.jwtUtils.generateToken(userId, TokenType.WS_ACCESS_TOKEN, restore),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, ),
             type: TokenPairType.WS
         })
 
@@ -417,7 +420,7 @@ export class AuthService {
 
     public async validateNewContact(totp: string, verificationToken: string, strategy: _2FaStrategy): Promise<ConfirmOutputDto> {
 
-        let message: string 
+        let message: string
 
         switch (strategy) {
 
@@ -468,7 +471,9 @@ export class AuthService {
 
     }
 
-   
+    public generateFingerprintFromFingerprintDto(fingerprintDto: FingerprintDto): string {
+        return this.securityUtils.generateSha256Hash(JSON.stringify(fingerprintDto))
+    }
 
 
 }

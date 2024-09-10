@@ -1,4 +1,5 @@
 import { IsBoolean, IsNotEmpty, IsString } from "class-validator";
+import { FingerprintDto } from "./fingerprint.dto/fingerprint.dto";
 
 export class LoginDto {
 
@@ -13,5 +14,8 @@ export class LoginDto {
     @IsNotEmpty({ message: `'restore' is required` })
     @IsBoolean({ message: `'restore' must be a boolean value` })
     restore: boolean
+
+    @IsNotEmpty({ message: `'fingerprinDto' is required` })
+    fingerprintDto: FingerprintDto
 
 }   

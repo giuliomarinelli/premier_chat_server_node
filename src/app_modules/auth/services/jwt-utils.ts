@@ -1,6 +1,6 @@
 import { TokenPairType } from './../Models/enums/token-pair-type.enum';
 import { JwtPayload } from './../Models/interfaces/jwt-payload.interface';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtConfiguration } from '../../../config/@types-config';
 import { RevokedTokenService } from './revoked-token.service';
@@ -86,7 +86,11 @@ export class JwtUtils {
     }
 
 
-    public async generateToken(userId: UUID, type: TokenType, restore: boolean): Promise<string> {
+    public async generateToken(userId: UUID, type: TokenType, restore: boolean, fingerprint: string = undefined): Promise<string> {
+
+        if ((type === TokenType.REFRESH_TOKEN || type === TokenType.WS_REFRESH_TOKEN
+            || type === TokenType.PRE_AUTHORIZATION_TOKEN) && !fingerprint)
+            throw new BadRequestException("No provided fingerprint")
 
         const jwtConfig = this.getJwtConfigurationFromTokenType(type)
 
@@ -97,6 +101,7 @@ export class JwtUtils {
                 jti: uuidv4(),
                 typ: type,
                 res: restore,
+                fgp: fingerprint,
                 iat: Date.now(),
                 exp: Date.now() + jwtConfig.expiresInMs
             },
@@ -128,7 +133,7 @@ export class JwtUtils {
 
 
     public async extractPayload(token: string, type: TokenType, ignoreExpiration: boolean): Promise<JwtPayload> {
-        
+
         if (await this.isRevokedToken(token, type))
             throw new UnauthorizedException(`Revoked ${type.toLowerCase().replaceAll("_", " ")}`)
 
