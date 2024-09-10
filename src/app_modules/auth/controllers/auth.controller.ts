@@ -77,7 +77,7 @@ export class AuthController {
         const { username, password, restore, fingerprintDto } = loginDto
         const userId: UUID = await this.authService.usernameAndPasswordAuthentication(username, password)
 
-        const authenticationTokens: Map<TokenPairType, TokenPair> = await this.authService.performAuthentication(userId, restore, fingerprintDto)
+        const authenticationTokens: Map<TokenPairType, TokenPair> = await this.authService.performAuthentication(userId, restore, fingerprintDto, req)
 
         const userOpt: Optional<User> = await this.userService.findValidEnabledUserById(userId)
 
@@ -128,7 +128,7 @@ export class AuthController {
             if (_2FaStrategies.includes(_2FaStrategy.EMAIL)) _email = true
             if (_2FaStrategies.includes(_2FaStrategy.SMS)) _sms = true
 
-            const preAuthorizationToken: string = await this.authService.performTotp2FaPreAuthorization(userId, restore, fingerprintDto)
+            const preAuthorizationToken: string = await this.authService.performTotp2FaPreAuthorization(userId, restore, fingerprintDto, req)
 
             res.setCookie("__pre_authorization_token", preAuthorizationToken)
 
@@ -234,7 +234,7 @@ export class AuthController {
         }
 
         const fingerprint: string = await this.jwtUtils.getFingerprintFromToken(preAuthorizationToken, TokenType.PRE_AUTHORIZATION_TOKEN)
-        const authenticationTokens: Map<TokenPairType, TokenPair> = await this.authService.performAuthentication(userId, restore, fingerprint)
+        const authenticationTokens: Map<TokenPairType, TokenPair> = await this.authService.performAuthentication(userId, restore, fingerprint, req)
 
         res.setCookie(
             this.tokenNames.get(TokenType.ACCESS_TOKEN),

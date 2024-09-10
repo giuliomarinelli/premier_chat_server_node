@@ -1,3 +1,4 @@
+import { Totp2Fa } from './../../notification/Models/interfaces/email-totp-2fa.interface';
 import { TokenPair } from './../Models/interfaces/token-pair.interface';
 import { TokenPairType } from './../Models/enums/token-pair-type.enum';
 import { BadRequestException, ForbiddenException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
@@ -24,6 +25,8 @@ import { EmailTotpContext } from 'src/app_modules/notification/Models/interfaces
 import { join } from 'path';
 import { v4 as uuidv4 } from "uuid"
 import { FingerprintDto } from '../Models/input-dto/fingerprint.dto/fingerprint.dto';
+import { FastifyRequest } from 'fastify';
+import { IpService } from './ip.service';
 
 @Injectable()
 export class AuthService {
@@ -39,7 +42,8 @@ export class AuthService {
         private readonly userService: UserService,
         private readonly configService: ConfigService,
         private readonly securityUtils: SecurityUtils,
-        private readonly jwtUtils: JwtUtils
+        private readonly jwtUtils: JwtUtils,
+        private readonly ipService: IpService
     ) {
         this.authorizationStrategy = this.configService.get<AuthorizationStrategy>("App.securityStrategy")
         this.activationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.activationToken")
@@ -281,44 +285,62 @@ export class AuthService {
 
     }
 
-    public async performAuthentication(userId: UUID, restore: boolean, fingerprintDtoOrFingerprint: FingerprintDto | string): Promise<Map<TokenPairType, TokenPair>> {
+    public async performAuthentication(
 
-        if (!fingerprintDtoOrFingerprint) throw new BadRequestException()
+        userId: UUID,
+        restore: boolean,
+        fingerprintDtoOrFingerprint: FingerprintDto | string,
+        req: FastifyRequest,
+        totp2Fa?: boolean
 
-        let fingerprint: string
+    ): Promise<Map<TokenPairType, TokenPair>> {
 
-        if (typeof fingerprintDtoOrFingerprint === "object") {
+        if (!fingerprintDtoOrFingerprint || !req) throw new BadRequestException()
 
-            fingerprint = this.generateFingerprintFromFingerprintDto(fingerprintDtoOrFingerprint)
+        if (!totp2Fa) {
 
-        } else if (fingerprintDtoOrFingerprint === "string") {
+            const ip: string = this.ipService.getClientIp(req)
 
-            fingerprint = fingerprintDtoOrFingerprint
+            let fingerprint: string
 
+            if (typeof fingerprintDtoOrFingerprint === "object") {
+
+                fingerprint = this.generateFingerprintFromFingerprintDto(fingerprintDtoOrFingerprint)
+
+            } else if (fingerprintDtoOrFingerprint === "string") {
+
+                fingerprint = fingerprintDtoOrFingerprint
+
+            } else {
+                throw new BadRequestException('Invalid fingerprint or fingerprint DTO')
+            }
+
+            const tokensMap = new Map<TokenPairType, TokenPair>()
+
+            tokensMap.set(TokenPairType.HTTP, {
+                accessToken: await this.jwtUtils.generateToken(userId, TokenType.ACCESS_TOKEN, restore, { ip }),
+                refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, { fingerprint, ip }),
+                type: TokenPairType.HTTP
+            })
+
+            tokensMap.set(TokenPairType.HTTP, {
+                accessToken: await this.jwtUtils.generateToken(userId, TokenType.WS_ACCESS_TOKEN, restore, { ip }),
+                refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, { fingerprint, ip }),
+                type: TokenPairType.WS
+            })
+
+            return tokensMap
         }
 
-        const tokensMap = new Map<TokenPairType, TokenPair>()
-
-        tokensMap.set(TokenPairType.HTTP, {
-            accessToken: await this.jwtUtils.generateToken(userId, TokenType.ACCESS_TOKEN, restore),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, { fingerprint }),
-            type: TokenPairType.HTTP
-        })
-
-        tokensMap.set(TokenPairType.HTTP, {
-            accessToken: await this.jwtUtils.generateToken(userId, TokenType.WS_ACCESS_TOKEN, restore),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, { fingerprint }),
-            type: TokenPairType.WS
-        })
-
-        return tokensMap
+        // Workflow che viene seguito nel caso in cui venga validata l'autenticazione dopo aver inserito il TOTP nel secondo fattore di 2FA
 
     }
 
-    public async performTotp2FaPreAuthorization(userId: UUID, restore: boolean, fingerprintDto: FingerprintDto): Promise<string> {
+    public async performTotp2FaPreAuthorization(userId: UUID, restore: boolean, fingerprintDto: FingerprintDto, req: FastifyRequest): Promise<string> {
 
         const fingerprint: string = this.generateFingerprintFromFingerprintDto(fingerprintDto)
-        return await this.jwtUtils.generateToken(userId, TokenType.PRE_AUTHORIZATION_TOKEN, restore, { fingerprint })
+        const ip: string = this.ipService.getClientIp(req)
+        return await this.jwtUtils.generateToken(userId, TokenType.PRE_AUTHORIZATION_TOKEN, restore, { fingerprint, ip })
 
     }
 
