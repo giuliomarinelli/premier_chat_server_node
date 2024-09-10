@@ -16,6 +16,7 @@ import { NotificationService } from '../notification/services/notification.servi
 import { AuthController } from './controllers/auth.controller';
 import { AccountController } from './controllers/account.controller';
 import { FingerprintService } from './services/fingerprint.service';
+import { IpService } from './services/ip.service';
 
 @Module({
   providers: [
@@ -32,7 +33,8 @@ import { FingerprintService } from './services/fingerprint.service';
       provide: APP_GUARD,
       useClass: AuthenticationGuard
     },
-    FingerprintService
+    FingerprintService,
+    IpService
 
   ],
   imports: [TypeOrmModule.forFeature([User, RevokedToken]), RequestContextModule],
