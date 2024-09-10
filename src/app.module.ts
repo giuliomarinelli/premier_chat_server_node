@@ -10,7 +10,6 @@ import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
 import { RequestContextModule } from 'nestjs-request-context';
 import { NotificationModule } from './app_modules/notification/notification.module';
 import { SocketIoModule } from './app_modules/socket.io/socket.io.module';
-import { MongoDbModule } from './app_modules/mongo-db.module';
 import { MongoDbModule } from './app_modules/mongo-db/mongo-db.module';
 
 
