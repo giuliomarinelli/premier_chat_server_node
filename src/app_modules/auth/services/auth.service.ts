@@ -1,4 +1,4 @@
-import { Totp2Fa } from './../../notification/Models/interfaces/email-totp-2fa.interface';
+import { JwtPayload } from "../Models/interfaces/jwt-payload.interface"
 import { TokenPair } from './../Models/interfaces/token-pair.interface';
 import { TokenPairType } from './../Models/enums/token-pair-type.enum';
 import { BadRequestException, ForbiddenException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
@@ -285,6 +285,28 @@ export class AuthService {
 
     }
 
+    
+
+    private async generateAuthenticationTokens(userId: UUID, restore: boolean, ip: string, fingerprint: string): Promise<Map<TokenPairType, TokenPair>> {
+
+        const tokensMap = new Map<TokenPairType, TokenPair>()
+
+        tokensMap.set(TokenPairType.HTTP, {
+            accessToken: await this.jwtUtils.generateToken(userId, TokenType.ACCESS_TOKEN, restore, { ip }),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, { fingerprint, ip }),
+            type: TokenPairType.HTTP
+        })
+
+        tokensMap.set(TokenPairType.HTTP, {
+            accessToken: await this.jwtUtils.generateToken(userId, TokenType.WS_ACCESS_TOKEN, restore, { ip }),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, { fingerprint, ip }),
+            type: TokenPairType.WS
+        })
+
+        return tokensMap
+
+    }
+
     public async performAuthentication(
 
         userId: UUID,
@@ -293,13 +315,14 @@ export class AuthService {
         req: FastifyRequest,
         totp2Fa?: boolean
 
-    ): Promise<Map<TokenPairType, TokenPair>> {
+    ): Promise<Map<TokenPairType, TokenPair>> | never {
 
         if (!fingerprintDtoOrFingerprint || !req) throw new BadRequestException()
 
-        if (!totp2Fa) {
+        const ip: string = this.ipService.getClientIp(req)
 
-            const ip: string = this.ipService.getClientIp(req)
+        // Workflow che viene seguito in assenza di 2FA via TOTP
+        if (!totp2Fa) {
 
             let fingerprint: string
 
@@ -315,24 +338,24 @@ export class AuthService {
                 throw new BadRequestException('Invalid fingerprint or fingerprint DTO')
             }
 
-            const tokensMap = new Map<TokenPairType, TokenPair>()
-
-            tokensMap.set(TokenPairType.HTTP, {
-                accessToken: await this.jwtUtils.generateToken(userId, TokenType.ACCESS_TOKEN, restore, { ip }),
-                refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, { fingerprint, ip }),
-                type: TokenPairType.HTTP
-            })
-
-            tokensMap.set(TokenPairType.HTTP, {
-                accessToken: await this.jwtUtils.generateToken(userId, TokenType.WS_ACCESS_TOKEN, restore, { ip }),
-                refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, { fingerprint, ip }),
-                type: TokenPairType.WS
-            })
-
-            return tokensMap
+            return await this.generateAuthenticationTokens(userId, restore, ip, fingerprint)
         }
 
         // Workflow che viene seguito nel caso in cui venga validata l'autenticazione dopo aver inserito il TOTP nel secondo fattore di 2FA
+
+        const preAuthorizationToken: string = req.cookies['__pre_authorization_token']
+        const jwtPayload: JwtPayload = await this.jwtUtils.extractPayload(
+            preAuthorizationToken,
+            TokenType.PRE_AUTHORIZATION_TOKEN,
+            false)
+        const firstFactorIp: string | undefined = jwtPayload.ip
+        const fingerprint: string | undefined = jwtPayload.fgp
+        const secondFactorIp: string | undefined = this.ipService.getClientIp(req)
+        // Comparazione fuzzy degli ip osservati durante il primo ed il secondo fattore della 2FA
+        if (!fingerprint || !firstFactorIp || !secondFactorIp || !this.ipService.compareIps(firstFactorIp, secondFactorIp))
+            throw new UnauthorizedException("2FA steps must be performed from the same device")
+
+        return await this.generateAuthenticationTokens(userId, restore, secondFactorIp, fingerprint)
 
     }
 
