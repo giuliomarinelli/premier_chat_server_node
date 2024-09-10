@@ -281,25 +281,44 @@ export class AuthService {
 
     }
 
-    public async performAuthentication(userId: UUID, restore: boolean, fingerprintDto: FingerprintDto): Promise<Map<TokenPairType, TokenPair>> {
+    public async performAuthentication(userId: UUID, restore: boolean, fingerprintDtoOrFingerprint: FingerprintDto | string): Promise<Map<TokenPairType, TokenPair>> {
 
-        if (!fingerprintDto) throw new BadRequestException()
+        if (!fingerprintDtoOrFingerprint) throw new BadRequestException()
+
+        let fingerprint: string
+
+        if (typeof fingerprintDtoOrFingerprint === "object") {
+            
+            fingerprint = this.generateFingerprintFromFingerprintDto(fingerprintDtoOrFingerprint)
+
+        } else if (fingerprintDtoOrFingerprint === "string") {
+            
+            fingerprint = fingerprintDtoOrFingerprint
+
+        }
 
         const tokensMap = new Map<TokenPairType, TokenPair>()
 
         tokensMap.set(TokenPairType.HTTP, {
             accessToken: await this.jwtUtils.generateToken(userId, TokenType.ACCESS_TOKEN, restore),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, ),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, fingerprint),
             type: TokenPairType.HTTP
         })
 
         tokensMap.set(TokenPairType.HTTP, {
             accessToken: await this.jwtUtils.generateToken(userId, TokenType.WS_ACCESS_TOKEN, restore),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, ),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, fingerprint),
             type: TokenPairType.WS
         })
 
         return tokensMap
+
+    }
+
+    public async performTotp2FaPreAuthorization(userId: UUID, restore: boolean, fingerprintDto: FingerprintDto): Promise<string> {
+
+        const fingerprint: string = this.generateFingerprintFromFingerprintDto(fingerprintDto)
+        return await this.jwtUtils.generateToken(userId, TokenType.PRE_AUTHORIZATION_TOKEN, restore, fingerprint)
 
     }
 

@@ -239,6 +239,19 @@ export class JwtUtils {
 
     }
 
+    public async getFingerprintFromToken(token: string, type: TokenType): Promise<string> | never {
+
+        switch (type) {
+            case TokenType.REFRESH_TOKEN:
+            case TokenType.WS_REFRESH_TOKEN:
+            case TokenType.PRE_AUTHORIZATION_TOKEN:
+                if (!this.verifyToken(token, type, false)) throw new UnauthorizedException()
+                return <string>(await this.extractPayload(token, type, false)).fgp
+            default: throw new BadRequestException()
+        }
+
+    }
+
 
 
 
