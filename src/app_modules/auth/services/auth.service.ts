@@ -2,9 +2,8 @@ import { JwtPayload } from "../Models/interfaces/jwt-payload.interface"
 import { TokenPair } from './../Models/interfaces/token-pair.interface';
 import { TokenPairType } from './../Models/enums/token-pair-type.enum';
 import { BadRequestException, ForbiddenException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../Models/sql-entities/user.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Argon2PasswordEncoder } from './argon2-password-encoder';
 import { NotificationService } from 'src/app_modules/notification/services/notification.service';
 import { UserService } from './user.service';
@@ -35,9 +34,10 @@ export class AuthService {
     private readonly authorizationStrategy: AuthorizationStrategy
     private readonly activationTokenConfig: JwtConfiguration
     private readonly totpConfig: TotpConfiguration
+    private readonly userRepository: Repository<User>
 
     constructor(
-        @InjectRepository(User) private readonly userRepository: Repository<User>,
+        private dataSource: DataSource,
         private readonly encoder: Argon2PasswordEncoder,
         private readonly notificationService: NotificationService,
         private readonly userService: UserService,
@@ -47,6 +47,7 @@ export class AuthService {
         private readonly ipService: IpService,
         private readonly sessionService: SessionService
     ) {
+        this.userRepository = this.dataSource.getRepository(User)
         this.authorizationStrategy = this.configService.get<AuthorizationStrategy>("App.securityStrategy")
         this.activationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.activationToken")
         this.totpConfig = this.configService.get<TotpConfiguration>("Totp")
