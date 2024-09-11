@@ -1,5 +1,8 @@
+import { FingerPrintModelType } from "../enums/fingerprint-model-type.enum"
+
 export interface Fingerprints {
 
+    type: FingerPrintModelType
     audioHash: string
     canvasHash: string
     fontsHash: string

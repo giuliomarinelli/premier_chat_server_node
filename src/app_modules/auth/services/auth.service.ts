@@ -1,3 +1,4 @@
+import { FingerprintDto } from '../Models/input-dto/fingerprint.dto/fingerprint-data.dto';
 import { JwtPayload } from "../Models/interfaces/jwt-payload.interface"
 import { TokenPair } from './../Models/interfaces/token-pair.interface';
 import { TokenPairType } from './../Models/enums/token-pair-type.enum';
@@ -23,7 +24,7 @@ import { TotpMetadataDto } from '../Models/output-dto/totp-metadata.dto.output';
 import { EmailTotpContext } from 'src/app_modules/notification/Models/interfaces/contexts/email-totp.context';
 import { join } from 'path';
 import { v4 as uuidv4 } from "uuid"
-import { FingerprintDto } from '../Models/input-dto/fingerprint.dto/fingerprint.dto';
+import { FingerprintDto } from '../Models/input-dto/fingerprint.dto/fingerprint-data.dto';
 import { FastifyRequest } from 'fastify';
 import { IpService } from './ip.service';
 import { SessionService } from "src/app_modules/socket.io/session-manager/services/session.service";
@@ -317,7 +318,7 @@ export class AuthService {
 
         userId: UUID,
         restore: boolean,
-        fingerprintDtoOrFingerprint: FingerprintDto | string,
+        fingerprintDtoOrFingerprint: FingerprintDto | Fingerprints,
         req: FastifyRequest,
         totp2Fa?: boolean
 
@@ -330,15 +331,15 @@ export class AuthService {
         // Workflow che viene seguito in assenza di 2FA via TOTP
         if (!totp2Fa) {
 
-            let fingerprint: string
+            let fingerprints: Fingerprints
 
-            if (typeof fingerprintDtoOrFingerprint === "object") {
+            if (fingerprintDtoOrFingerprint instanceof FingerprintDto) {
 
-                fingerprint = this.generateFingerprintFromFingerprintDto(fingerprintDtoOrFingerprint)
+                fingerprints = this.generateFingerprintsFromFingerprintDto(fingerprintDtoOrFingerprint)
 
-            } else if (fingerprintDtoOrFingerprint === "string") {
+            } else if (fingerprintDtoOrFingerprint instanceof Fingerprints) {
 
-                fingerprint = fingerprintDtoOrFingerprint
+                fingerprints = fingerprintDtoOrFingerprint
 
             } else {
                 throw new BadRequestException('Invalid fingerprint or fingerprint DTO')
@@ -541,7 +542,7 @@ export class AuthService {
 
     }
 
-    public async generateFingerprintFromFingerprintDto(fingerprintDto: FingerprintDto): Promise<Fingerprints> {
+    public async generateFingerprintsFromFingerprintDto(fingerprintDto: FingerprintDto): Promise<Fingerprints> {
 
         const { audio, canvas, fonts, hardware, locales, math, permissions, plugins, screen, system, webgl } = fingerprintDto
 

@@ -1,5 +1,5 @@
 import { IsBoolean, IsNotEmpty, IsString } from "class-validator";
-import { FingerprintDto } from "./fingerprint.dto/fingerprint.dto";
+import { FingerprintDto } from "./fingerprint.dto/fingerprint-data.dto";
 
 export class LoginDto {
 
