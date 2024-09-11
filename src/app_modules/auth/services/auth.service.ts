@@ -27,10 +27,10 @@ import { join } from 'path';
 import { v4 as uuidv4 } from "uuid"
 import { FastifyRequest } from 'fastify';
 import { IpService } from './ip.service';
-import { SessionService } from "src/app_modules/socket.io/session-manager/services/session.service";
 import { Fingerprints } from "../Models/interfaces/fingerprints.interface";
 import { CompressionManagementService } from "./compression-management.service";
 import { FingerPrintModelType } from '../Models/enums/fingerprint-model-type.enum';
+import { SessionService } from 'src/app_modules/redis/session-manager/services/session.service';
 
 @Injectable()
 export class AuthService {

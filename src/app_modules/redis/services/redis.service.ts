@@ -1,51 +1,38 @@
-import { Injectable, Logger } from '@nestjs/common';
-import Redis from 'ioredis';
+import { Injectable } from '@nestjs/common';
+import { Redis } from 'ioredis';
 
 @Injectable()
 export class RedisService {
+  constructor(
+    private readonly redisClient: Redis,
+  ) {}
 
-    private readonly logger = new Logger(RedisService.name);
-    private readonly redisClient: Redis;
-
-    constructor(@Inject('REDIS_CLIENT') private redisClient: Redis) {
-        
-        
-       
-        this.redisClient.on('error', (error) => {
-            this.logger.error('Redis error:', error);
-        });
-
-        this.redisClient.on('connect', () => {
-            this.logger.log('Redis connected');
-        });
-
-        this.redisClient.on('end', () => {
-            this.logger.log('Redis connection closed');
-        });
+  // Cache methods
+  async setCache(key: string, value: string, expireSeconds?: number): Promise<'OK'> {
+    if (expireSeconds) {
+      return this.redisClient.set(key, value, 'EX', expireSeconds);
     }
+    return this.redisClient.set(key, value);
+  }
 
-    async set(key: string, value: string, expirationInSeconds?: number): Promise<void> {
-        if (expirationInSeconds) {
-            await this.redisClient.set(key, value, 'EX', expirationInSeconds);
-        } else {
-            await this.redisClient.set(key, value);
-        }
-    }
+  async getCache(key: string): Promise<string | null> {
+    return this.redisClient.get(key);
+  }
 
-    async get(key: string): Promise<string | null> {
-        return this.redisClient.get(key);
-    }
+  async deleteCache(key: string): Promise<number> {
+    return this.redisClient.del(key);
+  }
 
-    async del(key: string): Promise<void> {
-        await this.redisClient.del(key);
-    }
+  // Persistence methods
+  async hsetHash(hash: string, key: string, value: string): Promise<number> {
+    return this.redisClient.hset(hash, key, value);
+  }
 
-    async exists(key: string): Promise<boolean> {
-        const result = await this.redisClient.exists(key);
-        return result === 1;
-    }
+  async hgetHash(hash: string, key: string): Promise<string | null> {
+    return this.redisClient.hget(hash, key);
+  }
 
-    async quit(): Promise<void> {
-        await this.redisClient.quit();
-    }
+  async hdelHash(hash: string, key: string): Promise<number> {
+    return this.redisClient.hdel(hash, key);
+  }
 }
