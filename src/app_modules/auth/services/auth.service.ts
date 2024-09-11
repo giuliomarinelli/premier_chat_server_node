@@ -1,8 +1,9 @@
-import { FingerprintDto } from '../Models/input-dto/fingerprint.dto/fingerprint-data.dto';
+import { FingerprintService } from './fingerprint.service';
+import { FingerprintDataDto } from '../Models/input-dto/fingerprint.dto/fingerprint-data.dto';
 import { JwtPayload } from "../Models/interfaces/jwt-payload.interface"
 import { TokenPair } from './../Models/interfaces/token-pair.interface';
 import { TokenPairType } from './../Models/enums/token-pair-type.enum';
-import { BadRequestException, ForbiddenException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { User } from '../Models/sql-entities/user.entity';
 import { DataSource, Repository } from 'typeorm';
 import { Argon2PasswordEncoder } from './argon2-password-encoder';
@@ -24,12 +25,12 @@ import { TotpMetadataDto } from '../Models/output-dto/totp-metadata.dto.output';
 import { EmailTotpContext } from 'src/app_modules/notification/Models/interfaces/contexts/email-totp.context';
 import { join } from 'path';
 import { v4 as uuidv4 } from "uuid"
-import { FingerprintDto } from '../Models/input-dto/fingerprint.dto/fingerprint-data.dto';
 import { FastifyRequest } from 'fastify';
 import { IpService } from './ip.service';
 import { SessionService } from "src/app_modules/socket.io/session-manager/services/session.service";
 import { Fingerprints } from "../Models/interfaces/fingerprints.interface";
 import { CompressionManagementService } from "./compression-management.service";
+import { FingerPrintModelType } from '../Models/enums/fingerprint-model-type.enum';
 
 @Injectable()
 export class AuthService {
@@ -49,7 +50,8 @@ export class AuthService {
         private readonly jwtUtils: JwtUtils,
         private readonly ipService: IpService,
         private readonly sessionService: SessionService,
-        private readonly compressionService: CompressionManagementService
+        private readonly compressionService: CompressionManagementService,
+        private readonly fingerprintService: FingerprintService
     ) {
         this.userRepository = this.dataSource.getRepository(User)
         this.authorizationStrategy = this.configService.get<AuthorizationStrategy>("App.securityStrategy")
@@ -294,19 +296,19 @@ export class AuthService {
 
 
 
-    private async generateAuthenticationTokens(userId: UUID, restore: boolean, ip: string, fingerprint: string): Promise<Map<TokenPairType, TokenPair>> {
+    private async generateAuthenticationTokens(userId: UUID, restore: boolean, ip: string, fingerprints: Fingerprints): Promise<Map<TokenPairType, TokenPair>> {
 
         const tokensMap = new Map<TokenPairType, TokenPair>()
 
         tokensMap.set(TokenPairType.HTTP, {
             accessToken: await this.jwtUtils.generateToken(userId, TokenType.ACCESS_TOKEN, restore, { ip }),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, { fingerprint, ip }),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, { fingerprints, ip }),
             type: TokenPairType.HTTP
         })
 
         tokensMap.set(TokenPairType.HTTP, {
             accessToken: await this.jwtUtils.generateToken(userId, TokenType.WS_ACCESS_TOKEN, restore, { ip }),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, { fingerprint, ip }),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, { fingerprints, ip }),
             type: TokenPairType.WS
         })
 
@@ -318,7 +320,7 @@ export class AuthService {
 
         userId: UUID,
         restore: boolean,
-        fingerprintDtoOrFingerprint: FingerprintDto | Fingerprints,
+        fingerprintDtoOrFingerprint: FingerprintDataDto | Fingerprints,
         req: FastifyRequest,
         totp2Fa?: boolean
 
@@ -333,19 +335,26 @@ export class AuthService {
 
             let fingerprints: Fingerprints
 
-            if (fingerprintDtoOrFingerprint instanceof FingerprintDto) {
+            if (!fingerprintDtoOrFingerprint) throw new InternalServerErrorException()
 
-                fingerprints = this.generateFingerprintsFromFingerprintDto(fingerprintDtoOrFingerprint)
+            switch (fingerprintDtoOrFingerprint.type) {
 
-            } else if (fingerprintDtoOrFingerprint instanceof Fingerprints) {
+                case FingerPrintModelType.FingerprintDto:
+                    fingerprints = await this.fingerprintService
+                        .generateFingerprintsFromFingerprintDataDto(fingerprintDtoOrFingerprint as FingerprintDataDto)
+                    return await this.generateAuthenticationTokens(userId, restore, ip, fingerprints)
 
-                fingerprints = fingerprintDtoOrFingerprint
 
-            } else {
-                throw new BadRequestException('Invalid fingerprint or fingerprint DTO')
+                case FingerPrintModelType.Fingerprints:
+                    fingerprints = fingerprintDtoOrFingerprint as Fingerprints
+                    return await this.generateAuthenticationTokens(userId, restore, ip, fingerprints)
+
+                default: throw new BadRequestException('Invalid fingerprint or fingerprint DTO')
             }
 
-            return await this.generateAuthenticationTokens(userId, restore, ip, fingerprint)
+
+
+
         }
 
         // Workflow che viene seguito nel caso in cui venga validata l'autenticazione dopo aver inserito il TOTP nel secondo fattore di 2FA
@@ -356,21 +365,21 @@ export class AuthService {
             TokenType.PRE_AUTHORIZATION_TOKEN,
             false)
         const firstFactorIp: string | undefined = jwtPayload.ip
-        const fingerprint: string | undefined = jwtPayload.fgp
+        const fingerprints: Fingerprints | undefined = jwtPayload.fgp
         const secondFactorIp: string | undefined = this.ipService.getClientIp(req)
         // Comparazione fuzzy degli ip osservati durante il primo ed il secondo fattore della 2FA
-        if (!fingerprint || !firstFactorIp || !secondFactorIp || !this.ipService.compareIps(firstFactorIp, secondFactorIp))
+        if (!fingerprints || !firstFactorIp || !secondFactorIp || !this.ipService.compareIps(firstFactorIp, secondFactorIp))
             throw new UnauthorizedException("2FA steps must be performed from the same device")
 
-        return await this.generateAuthenticationTokens(userId, restore, secondFactorIp, fingerprint)
+        return await this.generateAuthenticationTokens(userId, restore, secondFactorIp, fingerprints)
 
     }
 
-    public async performTotp2FaPreAuthorization(userId: UUID, restore: boolean, fingerprintDto: FingerprintDto, req: FastifyRequest): Promise<string> {
+    public async performTotp2FaPreAuthorization(userId: UUID, restore: boolean, fingerprintDataDto: FingerprintDataDto, req: FastifyRequest): Promise<string> {
 
-        const fingerprint: string = this.generateFingerprintFromFingerprintDto(fingerprintDto)
+        const fingerprints: Fingerprints = await this.fingerprintService.generateFingerprintsFromFingerprintDataDto(fingerprintDataDto)
         const ip: string = this.ipService.getClientIp(req)
-        return await this.jwtUtils.generateToken(userId, TokenType.PRE_AUTHORIZATION_TOKEN, restore, { fingerprint, ip })
+        return await this.jwtUtils.generateToken(userId, TokenType.PRE_AUTHORIZATION_TOKEN, restore, { fingerprints, ip })
 
     }
 
@@ -542,24 +551,7 @@ export class AuthService {
 
     }
 
-    public async generateFingerprintsFromFingerprintDto(fingerprintDto: FingerprintDto): Promise<Fingerprints> {
 
-        const { audio, canvas, fonts, hardware, locales, math, permissions, plugins, screen, system, webgl } = fingerprintDto
-
-        return {
-            audioHash: await this.securityUtils.generateSha256Hash(JSON.stringify(audio)),
-            canvasHash: await this.securityUtils.generateSha256Hash(JSON.stringify(canvas)),
-            fontsHash: await this.securityUtils.generateSha256Hash(JSON.stringify(fonts)),
-            hardwareHash: await this.securityUtils.generateSha256Hash(JSON.stringify(hardware)),
-            localesHash: await this.securityUtils.generateSha256Hash(JSON.stringify(locales)),
-            permissionsHash: await this.securityUtils.generateSha256Hash(JSON.stringify(permissions)),
-            pluginsHash: await this.securityUtils.generateSha256Hash(JSON.stringify(plugins)),
-            screenHash: await this.securityUtils.generateSha256Hash(JSON.stringify(screen)),
-            systemHash: await this.securityUtils.generateSha256Hash(JSON.stringify(system)),
-            webglHash: await this.securityUtils.generateSha256Hash(JSON.stringify(webgl)),
-            mathHash: await this.securityUtils.generateSha256Hash(JSON.stringify(math))
-        }
-    }
 
 
 }

@@ -14,6 +14,7 @@ import { RevokedToken } from '../Models/sql-entities/revoked-token.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GenerateTokenOptions } from '../Models/interfaces/generate-token-options.interface';
+import { Fingerprints } from '../Models/interfaces/fingerprints.interface';
 
 @Injectable()
 export class JwtUtils {
@@ -94,10 +95,10 @@ export class JwtUtils {
         options: GenerateTokenOptions | undefined = undefined
     ): Promise<string> {
 
-        const { fingerprint, ip } = options || {}
+        const { fingerprints, ip } = options || {}
 
         if ((type === TokenType.REFRESH_TOKEN || type === TokenType.WS_REFRESH_TOKEN
-            || type === TokenType.PRE_AUTHORIZATION_TOKEN) && !fingerprint)
+            || type === TokenType.PRE_AUTHORIZATION_TOKEN) && !fingerprints)
             throw new BadRequestException("No provided fingerprint")
 
         if ((type === TokenType.ACCESS_TOKEN || type === TokenType.WS_ACCESS_TOKEN || type === TokenType.REFRESH_TOKEN
@@ -113,7 +114,7 @@ export class JwtUtils {
                 jti: uuidv4(),
                 typ: type,
                 res: restore,
-                fgp: fingerprint,
+                fgp: fingerprints,
                 ip,
                 iat: Date.now(),
                 exp: Date.now() + jwtConfig.expiresInMs
@@ -252,14 +253,14 @@ export class JwtUtils {
 
     }
 
-    public async getFingerprintFromToken(token: string, type: TokenType): Promise<string> | never {
+    public async getFingerprintsFromToken(token: string, type: TokenType): Promise<Fingerprints> | never {
 
         switch (type) {
             case TokenType.REFRESH_TOKEN:
             case TokenType.WS_REFRESH_TOKEN:
             case TokenType.PRE_AUTHORIZATION_TOKEN:
                 if (!this.verifyToken(token, type, false)) throw new UnauthorizedException()
-                return <string>(await this.extractPayload(token, type, false)).fgp
+                return <Fingerprints>(await this.extractPayload(token, type, false)).fgp
             default: throw new BadRequestException()
         }
 

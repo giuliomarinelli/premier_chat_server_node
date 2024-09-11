@@ -1,6 +1,8 @@
+import { Fingerprints } from "./fingerprints.interface"
+
 export interface GenerateTokenOptions {
 
-    fingerprint?: string 
+    fingerprints?: Fingerprints 
     ip?: string
 
 } 
