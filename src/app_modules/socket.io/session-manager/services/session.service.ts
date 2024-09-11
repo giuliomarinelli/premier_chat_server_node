@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
-import { Session } from 'src/app_modules/mongo-db/Models/schema/session.schema';
-import { SessionInformations } from 'src/app_modules/mongo-db/Models/schema/session-information.schema';
+import { Session } from '../Models/schema/session.schema';
+import { SessionInformations } from '../Models/schema/session-information.schema';
+
+
 
 
 

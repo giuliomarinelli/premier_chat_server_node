@@ -18,6 +18,7 @@ import { AccountController } from './controllers/account.controller';
 import { FingerprintService } from './services/fingerprint.service';
 import { IpService } from './services/ip.service';
 import { SessionService } from '../socket.io/session-manager/services/session.service';
+import { CompressionManagementService } from './services/compression-management.service';
 
 @Module({
   providers: [
@@ -36,7 +37,8 @@ import { SessionService } from '../socket.io/session-manager/services/session.se
       useClass: AuthenticationGuard
     },
     FingerprintService,
-    IpService
+    IpService,
+    CompressionManagementService
 
   ],
   imports: [TypeOrmModule.forFeature([User, RevokedToken]), RequestContextModule],

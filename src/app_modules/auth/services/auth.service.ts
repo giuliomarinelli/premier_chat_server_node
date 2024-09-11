@@ -37,7 +37,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>
 
     constructor(
-        private dataSource: DataSource,
+        private readonly dataSource: DataSource,
         private readonly encoder: Argon2PasswordEncoder,
         private readonly notificationService: NotificationService,
         private readonly userService: UserService,
