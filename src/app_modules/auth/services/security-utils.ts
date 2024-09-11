@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { TotpWrapper } from '../Models/output-dto/totp-wrapper.output.dto';
 import { CookieOptions } from 'express';
 import { _2FaStrategy } from '../Models/enums/_2fa-strategy.enum';
+import { promisify } from 'util';
 
 @Injectable()
 export class SecurityUtils {
@@ -133,14 +134,17 @@ export class SecurityUtils {
         return _enum
     }
 
-    public generateSha256Hash(data: string, endcode: BinaryToTextEncoding = "hex"): string {
-
+    // Creare una funzione promisified per l'hashing
+    private asyncHash: (data: string, encoding: BinaryToTextEncoding) => Promise<string> = promisify(async (data: string, encoding: BinaryToTextEncoding, callback: (err: Error | null, hash?: string) => void) => {
         const hash = createHash('sha256');
         hash.update(data);
-        return hash.digest(endcode);
+        callback(null, hash.digest(encoding));
+    });
 
+    public async generateSha256Hash(data: string, encoding: BinaryToTextEncoding = 'hex'): Promise<string> {
+        return this.asyncHash(data, encoding);
     }
 
-    
+
 
 }

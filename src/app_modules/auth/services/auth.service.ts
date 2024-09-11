@@ -27,6 +27,8 @@ import { FingerprintDto } from '../Models/input-dto/fingerprint.dto/fingerprint.
 import { FastifyRequest } from 'fastify';
 import { IpService } from './ip.service';
 import { SessionService } from "src/app_modules/socket.io/session-manager/services/session.service";
+import { Fingerprints } from "../Models/interfaces/fingerprints.interface";
+import { CompressionManagementService } from "./compression-management.service";
 
 @Injectable()
 export class AuthService {
@@ -45,7 +47,8 @@ export class AuthService {
         private readonly securityUtils: SecurityUtils,
         private readonly jwtUtils: JwtUtils,
         private readonly ipService: IpService,
-        private readonly sessionService: SessionService
+        private readonly sessionService: SessionService,
+        private readonly compressionService: CompressionManagementService
     ) {
         this.userRepository = this.dataSource.getRepository(User)
         this.authorizationStrategy = this.configService.get<AuthorizationStrategy>("App.securityStrategy")
@@ -288,7 +291,7 @@ export class AuthService {
 
     }
 
-    
+
 
     private async generateAuthenticationTokens(userId: UUID, restore: boolean, ip: string, fingerprint: string): Promise<Map<TokenPairType, TokenPair>> {
 
@@ -538,8 +541,23 @@ export class AuthService {
 
     }
 
-    public generateFingerprintFromFingerprintDto(fingerprintDto: FingerprintDto): string {
-        return this.securityUtils.generateSha256Hash(JSON.stringify(fingerprintDto))
+    public async generateFingerprintFromFingerprintDto(fingerprintDto: FingerprintDto): Promise<Fingerprints> {
+
+        const { audio, canvas, fonts, hardware, locales, math, permissions, plugins, screen, system, webgl } = fingerprintDto
+
+        return {
+            audioHash: await this.securityUtils.generateSha256Hash(JSON.stringify(audio)),
+            canvasHash: await this.securityUtils.generateSha256Hash(JSON.stringify(canvas)),
+            fontsHash: await this.securityUtils.generateSha256Hash(JSON.stringify(fonts)),
+            hardwareHash: await this.securityUtils.generateSha256Hash(JSON.stringify(hardware)),
+            localesHash: await this.securityUtils.generateSha256Hash(JSON.stringify(locales)),
+            permissionsHash: await this.securityUtils.generateSha256Hash(JSON.stringify(permissions)),
+            pluginsHash: await this.securityUtils.generateSha256Hash(JSON.stringify(plugins)),
+            screenHash: await this.securityUtils.generateSha256Hash(JSON.stringify(screen)),
+            systemHash: await this.securityUtils.generateSha256Hash(JSON.stringify(system)),
+            webglHash: await this.securityUtils.generateSha256Hash(JSON.stringify(webgl)),
+            mathHash: await this.securityUtils.generateSha256Hash(JSON.stringify(math))
+        }
     }
 
 
