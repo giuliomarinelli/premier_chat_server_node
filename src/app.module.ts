@@ -10,6 +10,8 @@ import { MailerModule, MailerOptions } from '@nestjs-modules/mailer';
 import { RequestContextModule } from 'nestjs-request-context';
 import { NotificationModule } from './app_modules/notification/notification.module';
 import { SocketIoModule } from './app_modules/socket.io/socket.io.module';
+import { RedisModule } from './app_modules/redis/redis.module';
+
 
 
 
@@ -38,7 +40,8 @@ import { SocketIoModule } from './app_modules/socket.io/socket.io.module';
     }),
     RequestContextModule,
     NotificationModule,
-    SocketIoModule
+    SocketIoModule,
+    RedisModule
   ],
   controllers: [AppController],
   providers: [

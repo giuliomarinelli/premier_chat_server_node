@@ -1,9 +1,11 @@
+import { FingerprintService } from './fingerprint.service';
+import { FingerprintDataDto } from '../Models/input-dto/fingerprint.dto/fingerprint-data.dto';
+import { JwtPayload } from "../Models/interfaces/jwt-payload.interface"
 import { TokenPair } from './../Models/interfaces/token-pair.interface';
 import { TokenPairType } from './../Models/enums/token-pair-type.enum';
-import { BadRequestException, ForbiddenException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { BadRequestException, ForbiddenException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { User } from '../Models/sql-entities/user.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Argon2PasswordEncoder } from './argon2-password-encoder';
 import { NotificationService } from 'src/app_modules/notification/services/notification.service';
 import { UserService } from './user.service';
@@ -23,6 +25,12 @@ import { TotpMetadataDto } from '../Models/output-dto/totp-metadata.dto.output';
 import { EmailTotpContext } from 'src/app_modules/notification/Models/interfaces/contexts/email-totp.context';
 import { join } from 'path';
 import { v4 as uuidv4 } from "uuid"
+import { FastifyRequest } from 'fastify';
+import { IpService } from './ip.service';
+import { Fingerprints } from "../Models/interfaces/fingerprints.interface";
+import { CompressionManagementService } from "./compression-management.service";
+import { FingerPrintModelType } from '../Models/enums/fingerprint-model-type.enum';
+import { SessionService } from 'src/app_modules/redis/session-manager/services/session.service';
 
 @Injectable()
 export class AuthService {
@@ -30,16 +38,22 @@ export class AuthService {
     private readonly authorizationStrategy: AuthorizationStrategy
     private readonly activationTokenConfig: JwtConfiguration
     private readonly totpConfig: TotpConfiguration
+    private readonly userRepository: Repository<User>
 
     constructor(
-        @InjectRepository(User) private readonly userRepository: Repository<User>,
+        private readonly dataSource: DataSource,
         private readonly encoder: Argon2PasswordEncoder,
         private readonly notificationService: NotificationService,
         private readonly userService: UserService,
         private readonly configService: ConfigService,
         private readonly securityUtils: SecurityUtils,
-        private readonly jwtUtils: JwtUtils
+        private readonly jwtUtils: JwtUtils,
+        private readonly ipService: IpService,
+        private readonly sessionService: SessionService,
+        private readonly compressionService: CompressionManagementService,
+        private readonly fingerprintService: FingerprintService
     ) {
+        this.userRepository = this.dataSource.getRepository(User)
         this.authorizationStrategy = this.configService.get<AuthorizationStrategy>("App.securityStrategy")
         this.activationTokenConfig = this.configService.get<JwtConfiguration>("Jwt.activationToken")
         this.totpConfig = this.configService.get<TotpConfiguration>("Totp")
@@ -280,23 +294,92 @@ export class AuthService {
 
     }
 
-    public async performAuthentication(userId: UUID, restore: boolean): Promise<Map<TokenPairType, TokenPair>> {
+
+
+    private async generateAuthenticationTokens(userId: UUID, restore: boolean, ip: string, fingerprints: Fingerprints): Promise<Map<TokenPairType, TokenPair>> {
 
         const tokensMap = new Map<TokenPairType, TokenPair>()
 
         tokensMap.set(TokenPairType.HTTP, {
-            accessToken: await this.jwtUtils.generateToken(userId, TokenType.ACCESS_TOKEN, restore),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore),
+            accessToken: await this.jwtUtils.generateToken(userId, TokenType.ACCESS_TOKEN, restore, { ip }),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.REFRESH_TOKEN, restore, { fingerprints, ip }),
             type: TokenPairType.HTTP
         })
 
         tokensMap.set(TokenPairType.HTTP, {
-            accessToken: await this.jwtUtils.generateToken(userId, TokenType.WS_ACCESS_TOKEN, restore),
-            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore),
+            accessToken: await this.jwtUtils.generateToken(userId, TokenType.WS_ACCESS_TOKEN, restore, { ip }),
+            refreshToken: await this.jwtUtils.generateToken(userId, TokenType.WS_REFRESH_TOKEN, restore, { fingerprints, ip }),
             type: TokenPairType.WS
         })
 
         return tokensMap
+
+    }
+
+    public async performAuthentication(
+
+        userId: UUID,
+        restore: boolean,
+        fingerprintDtoOrFingerprint: FingerprintDataDto | Fingerprints,
+        req: FastifyRequest,
+        totp2Fa?: boolean
+
+    ): Promise<Map<TokenPairType, TokenPair>> | never {
+
+        if (!fingerprintDtoOrFingerprint || !req) throw new BadRequestException()
+
+        const ip: string = this.ipService.getClientIp(req)
+
+        // Workflow che viene seguito in assenza di 2FA via TOTP
+        if (!totp2Fa) {
+
+            let fingerprints: Fingerprints
+
+            if (!fingerprintDtoOrFingerprint) throw new InternalServerErrorException()
+
+            switch (fingerprintDtoOrFingerprint.type) {
+
+                case FingerPrintModelType.FingerprintDto:
+                    fingerprints = await this.fingerprintService
+                        .generateFingerprintsFromFingerprintDataDto(fingerprintDtoOrFingerprint as FingerprintDataDto)
+                    return await this.generateAuthenticationTokens(userId, restore, ip, fingerprints)
+
+
+                case FingerPrintModelType.Fingerprints:
+                    fingerprints = fingerprintDtoOrFingerprint as Fingerprints
+                    return await this.generateAuthenticationTokens(userId, restore, ip, fingerprints)
+
+                default: throw new BadRequestException('Invalid fingerprint or fingerprint DTO')
+            }
+
+
+
+
+        }
+
+        // Workflow che viene seguito nel caso in cui venga validata l'autenticazione dopo aver inserito il TOTP nel secondo fattore di 2FA
+
+        const preAuthorizationToken: string = req.cookies['__pre_authorization_token']
+        const jwtPayload: JwtPayload = await this.jwtUtils.extractPayload(
+            preAuthorizationToken,
+            TokenType.PRE_AUTHORIZATION_TOKEN,
+            false)
+        const firstFactorIp: string | undefined = jwtPayload.ip
+        const fingerprints: Fingerprints | undefined = jwtPayload.fgp
+        const secondFactorIp: string | undefined = this.ipService.getClientIp(req)
+        // Comparazione fuzzy degli ip osservati durante il primo ed il secondo fattore della 2FA
+        if (!fingerprints || !firstFactorIp || !secondFactorIp || !this.ipService.compareIps(firstFactorIp, secondFactorIp))
+            throw new UnauthorizedException("2FA steps must be performed from the same device")
+
+        return await this.generateAuthenticationTokens(userId, restore, secondFactorIp, fingerprints)
+
+    }
+
+    public async performTotp2FaPreAuthorization(userId: UUID, restore: boolean, fingerprintDataDto: FingerprintDataDto, req: FastifyRequest): Promise<string> {
+
+        const fingerprints: Fingerprints = await this.fingerprintService.generateFingerprintsFromFingerprintDataDto(fingerprintDataDto)
+        const ip: string = this.ipService.getClientIp(req)
+        return await this.jwtUtils.generateToken(userId, TokenType.PRE_AUTHORIZATION_TOKEN, restore, { fingerprints, ip })
 
     }
 
@@ -417,7 +500,7 @@ export class AuthService {
 
     public async validateNewContact(totp: string, verificationToken: string, strategy: _2FaStrategy): Promise<ConfirmOutputDto> {
 
-        let message: string 
+        let message: string
 
         switch (strategy) {
 
@@ -467,6 +550,8 @@ export class AuthService {
         }
 
     }
+
+
 
 
 }

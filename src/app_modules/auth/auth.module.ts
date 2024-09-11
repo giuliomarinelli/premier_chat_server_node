@@ -15,6 +15,12 @@ import { AuthenticationGuard } from './guards/authentication.guard';
 import { NotificationService } from '../notification/services/notification.service';
 import { AuthController } from './controllers/auth.controller';
 import { AccountController } from './controllers/account.controller';
+import { FingerprintService } from './services/fingerprint.service';
+import { IpService } from './services/ip.service';
+import { CompressionManagementService } from './services/compression-management.service';
+import { SessionService } from '../redis/session-manager/services/session.service';
+import { RedisService } from '../redis/services/redis.service';
+import Redis from 'ioredis';
 
 @Module({
   providers: [
@@ -27,10 +33,16 @@ import { AccountController } from './controllers/account.controller';
     JwtService,
     NotificationService,
     Object,
+    SessionService,
+    RedisService,
+    Redis,
     {
       provide: APP_GUARD,
       useClass: AuthenticationGuard
-    }
+    },
+    FingerprintService,
+    IpService,
+    CompressionManagementService
 
   ],
   imports: [TypeOrmModule.forFeature([User, RevokedToken]), RequestContextModule],

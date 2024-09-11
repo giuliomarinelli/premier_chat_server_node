@@ -1,6 +1,6 @@
 import { TokenPairType } from './../Models/enums/token-pair-type.enum';
 import { JwtPayload } from './../Models/interfaces/jwt-payload.interface';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtConfiguration } from '../../../config/@types-config';
 import { RevokedTokenService } from './revoked-token.service';
@@ -13,6 +13,8 @@ import { FastifyRequest } from 'fastify';
 import { RevokedToken } from '../Models/sql-entities/revoked-token.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { GenerateTokenOptions } from '../Models/interfaces/generate-token-options.interface';
+import { Fingerprints } from '../Models/interfaces/fingerprints.interface';
 
 @Injectable()
 export class JwtUtils {
@@ -86,7 +88,22 @@ export class JwtUtils {
     }
 
 
-    public async generateToken(userId: UUID, type: TokenType, restore: boolean): Promise<string> {
+    public async generateToken(
+        userId: UUID,
+        type: TokenType,
+        restore: boolean,
+        options: GenerateTokenOptions | undefined = undefined
+    ): Promise<string> {
+
+        const { fingerprints, ip } = options || {}
+
+        if ((type === TokenType.REFRESH_TOKEN || type === TokenType.WS_REFRESH_TOKEN
+            || type === TokenType.PRE_AUTHORIZATION_TOKEN) && !fingerprints)
+            throw new BadRequestException("No provided fingerprint")
+
+        if ((type === TokenType.ACCESS_TOKEN || type === TokenType.WS_ACCESS_TOKEN || type === TokenType.REFRESH_TOKEN
+            || type === TokenType.WS_REFRESH_TOKEN || type === TokenType.PRE_AUTHORIZATION_TOKEN) && !ip)
+            throw new BadRequestException("Unknown ip address")
 
         const jwtConfig = this.getJwtConfigurationFromTokenType(type)
 
@@ -97,6 +114,8 @@ export class JwtUtils {
                 jti: uuidv4(),
                 typ: type,
                 res: restore,
+                fgp: fingerprints,
+                ip,
                 iat: Date.now(),
                 exp: Date.now() + jwtConfig.expiresInMs
             },
@@ -128,7 +147,7 @@ export class JwtUtils {
 
 
     public async extractPayload(token: string, type: TokenType, ignoreExpiration: boolean): Promise<JwtPayload> {
-        
+
         if (await this.isRevokedToken(token, type))
             throw new UnauthorizedException(`Revoked ${type.toLowerCase().replaceAll("_", " ")}`)
 
@@ -230,6 +249,19 @@ export class JwtUtils {
                     type
                 }
 
+        }
+
+    }
+
+    public async getFingerprintsFromToken(token: string, type: TokenType): Promise<Fingerprints> | never {
+
+        switch (type) {
+            case TokenType.REFRESH_TOKEN:
+            case TokenType.WS_REFRESH_TOKEN:
+            case TokenType.PRE_AUTHORIZATION_TOKEN:
+                if (!this.verifyToken(token, type, false)) throw new UnauthorizedException()
+                return <Fingerprints>(await this.extractPayload(token, type, false)).fgp
+            default: throw new BadRequestException()
         }
 
     }
