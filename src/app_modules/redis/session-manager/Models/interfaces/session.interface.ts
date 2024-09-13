@@ -9,6 +9,8 @@ export interface ISession {
     userId: UUID
     restore: boolean
     valid: boolean
+    socketMapped: boolean /* false finché non viene validata la sessione tramite SocketIO - WebSocket 
+                                ma supporto anche per HTTP Long polling in caso di incompatibilità */
     fingerprints: Fingerprints
     createdAt: number
     expiresAt: number
@@ -17,6 +19,5 @@ export interface ISession {
     informations: ISessionInformations
     loggedIn: boolean // Indica se l'utente è loggato o meno, distinguendo due tipi differenti di sessione
     tokens?: ISessionTokens // undefined in caso di sessione di utente non loggato
-    socketId?: string 
 
 }

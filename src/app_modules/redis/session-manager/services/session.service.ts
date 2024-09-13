@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from 'src/app_modules/redis/services/redis.service';
 import { ISession } from '../Models/interfaces/session.interface';
+import { UUID } from 'crypto';
+import { SessionException } from 'src/exception_handling/session-exception';
 
 
 @Injectable()
@@ -45,4 +47,25 @@ export class SessionService {
     // Remove from persistent storage
     await this.redisService.hdelHash('sessions', sessionId);
   }
+
+  public async updateSocketMapped(sessionId: UUID): Promise<void> {
+    // Recupera la sessione esistente
+    const sessionJson = await this.redisService.hgetHash('sessions', sessionId.toString());
+  
+    if (!sessionJson) {
+      throw new SessionException('Session not found');
+    }
+  
+    // Parse della sessione JSON in oggetto
+    const session: ISession = JSON.parse(sessionJson) as ISession
+  
+    // Aggiorna la proprietà socketMapped
+    session.socketMapped = true
+  
+    // Salva la sessione aggiornata
+    await this.redisService.hsetHash('sessions', sessionId.toString(), JSON.stringify(session))
+  }
+  
+  
+
 }

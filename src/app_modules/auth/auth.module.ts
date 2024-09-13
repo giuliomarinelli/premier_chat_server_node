@@ -20,6 +20,7 @@ import { IpService } from './services/ip.service';
 import { CompressionManagementService } from './services/compression-management.service';
 import { SessionService } from '../redis/session-manager/services/session.service';
 import { RedisService } from '../redis/services/redis.service';
+import { SecureCookieService } from './services/secure-cookie.service';
 import Redis from 'ioredis';
 
 @Module({
@@ -42,7 +43,8 @@ import Redis from 'ioredis';
     },
     FingerprintService,
     IpService,
-    CompressionManagementService
+    CompressionManagementService,
+    SecureCookieService
 
   ],
   imports: [TypeOrmModule.forFeature([User, RevokedToken]), RequestContextModule],
