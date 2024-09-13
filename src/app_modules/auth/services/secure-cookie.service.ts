@@ -57,7 +57,7 @@ export class SecureCookieService {
         res.setCookie(name, signedValue, {
             httpOnly: false,  // Modifica in true se necessario
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax',
+            sameSite: 'lax',
         });
 
     }
