@@ -1,10 +1,12 @@
 import { Fingerprints } from "src/app_modules/auth/Models/interfaces/fingerprints.interface";
 import { ISessionInformations } from "./session-informations.interface";
 import { ISessionTokens } from "./tokens.interface"
+import { UUID } from "crypto";
 
 export interface ISession {
 
-    userId: string
+    id: UUID
+    userId: UUID
     restore: boolean
     valid: boolean
     fingerprints: Fingerprints
@@ -15,5 +17,6 @@ export interface ISession {
     informations: ISessionInformations
     loggedIn: boolean // Indica se l'utente è loggato o meno, distinguendo due tipi differenti di sessione
     tokens?: ISessionTokens // undefined in caso di sessione di utente non loggato
+    socketId?: string 
 
 }
