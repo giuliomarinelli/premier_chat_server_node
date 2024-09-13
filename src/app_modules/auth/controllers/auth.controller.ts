@@ -58,7 +58,7 @@ export class AuthController {
     @Post("/register")
     @UsePipes(new ValidationPipe({ transform: true }))
     public async register(@Body() userDto: UserPostInputDto): Promise<ConfirmRegistrationOutputDto> {
-
+        
         return await this.authService.register(userDto)
 
     }
@@ -76,7 +76,7 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @UsePipes(new ValidationPipe({ transform: true }))
     public async login(@Body() loginDto: LoginDto, @Req() req: FastifyRequest, @Res() res: FastifyReply): Promise<ConfirmLoginOutputDto> {
-
+       
         const { username, password, restore, fingerprintDto } = loginDto
         const userId: UUID = await this.authService.usernameAndPasswordAuthentication(username, password)
 
