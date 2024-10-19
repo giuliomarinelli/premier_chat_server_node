@@ -19,9 +19,7 @@ export class FingerprintService {
 
     }
 
-    public async generateFingerprintsFromFingerprintDataDto(fingerprintDataDto: FingerprintDataDto): Promise<Fingerprints> {
-
-        const { type, ...fingerprintDto } = fingerprintDataDto
+    public async generateFingerprintsFromFingerprintDataDto(fingerprintDto: FingerprintDto): Promise<Fingerprints> {
 
         const { audio, canvas, fonts, hardware, locales, math, permissions, plugins, screen, system, webgl } = fingerprintDto
 
@@ -36,8 +34,7 @@ export class FingerprintService {
             screenHash: await this.securityUtils.generateSha256Hash(JSON.stringify(screen)),
             systemHash: await this.securityUtils.generateSha256Hash(JSON.stringify(system)),
             webglHash: await this.securityUtils.generateSha256Hash(JSON.stringify(webgl)),
-            mathHash: await this.securityUtils.generateSha256Hash(JSON.stringify(math)),
-            type: FingerPrintModelType.Fingerprints
+            mathHash: await this.securityUtils.generateSha256Hash(JSON.stringify(math))
         }
     }
 

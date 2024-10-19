@@ -17,8 +17,10 @@ export class NotificationService {
         private readonly mailerService: MailerService,
         private readonly configService: ConfigService
     ) {
-        this.smsConfig = this.configService.get<SmsConfiguration>("Sms")
-        this.smsClient = new Twilio(this.smsConfig.accountSID, this.smsConfig.authToken)
+
+        const { accountSID, authToken } = this.configService.get<SmsConfiguration>("Sms")
+        this.smsClient = new Twilio(accountSID, authToken)
+        
     }
 
     public async sendEmail<T>(to: string, subject: string, context: T, templatePath: string): Promise<SentMessageInfo> {
@@ -33,7 +35,7 @@ export class NotificationService {
     }
 
 
-    public async sendSms(to: string, body: string): Promise<MessageInstance> { 
+    public async sendSms(to: string, body: string): Promise<MessageInstance> {
 
         return await this.smsClient.messages.create({
             to,

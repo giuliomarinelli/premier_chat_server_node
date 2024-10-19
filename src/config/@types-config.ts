@@ -64,3 +64,4 @@ export interface TotpConfiguration {
     period: number
 
 }
+

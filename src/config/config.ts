@@ -154,4 +154,5 @@ const TotpConfig = registerAs(
     })
 )
 
+
 export default [AppConfig, DataConfig, JwtConfig, EmailConfig, SmsConfig, SecurityCookieConfig, IsAuthCookieConfig, TotpConfig]
